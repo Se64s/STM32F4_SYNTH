@@ -24,6 +24,17 @@ extern "C" {
 /* Exported constants --------------------------------------------------------*/
 /* Exported macro ------------------------------------------------------------*/
 /* Exported functions prototypes ---------------------------------------------*/
+
+/**
+ * @brief Init error log interface.
+ * 
+ */
+void sys_error_init(void);
+
+/**
+ * @brief Handler for fatal errors.
+ * 
+ */
 void sys_error_handler(void);
 
 #ifdef __cplusplus

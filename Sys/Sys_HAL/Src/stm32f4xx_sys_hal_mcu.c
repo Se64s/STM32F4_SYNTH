@@ -86,6 +86,9 @@ sys_state_t sys_mcu_init(void)
     /* Configure the system clock */
     SystemClock_Config();
 
+    /* Initiate error log interface */
+    sys_error_init();
+
     return SYS_SUCCESS;
 }
 

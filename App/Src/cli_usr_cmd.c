@@ -36,6 +36,7 @@
 /* Private functions prototypes --------------------------------------------*/
 
 int cli_cmd_reset(int argc, char *argv[]);
+int cli_cmd_assert(int argc, char *argv[]);
 int cli_cmd_logOn(int argc, char *argv[]);
 int cli_cmd_logOff(int argc, char *argv[]);
 int cli_cmd_setLogLvl(int argc, char *argv[]);
@@ -47,6 +48,7 @@ static const sShellCommand s_shell_commands[] = {
     { "logon", cli_cmd_logOn, "Enable global log" },
     { "logoff", cli_cmd_logOff, "Disable global log" },
     { "setloglvl", cli_cmd_setLogLvl, "Set new log level for defined interface. Interface [0-7], Level [0-3]" },
+    { "assert", cli_cmd_assert, "Force system assert" },
     { "reset", cli_cmd_reset, "Reset device" },
     { "help", shell_help_handler, "Lists all commands" },
 };
@@ -79,6 +81,31 @@ int cli_cmd_reset(int argc, char *argv[])
     {
         shell_put_line(SHELL_STR_OK);
         sys_mcu_reset();
+    }
+
+    return iRetCode;
+}
+
+/**
+ * @brief Force assertin error subsystem
+ * 
+ * @param argc Number of arguments, 1
+ * @param argv List of arguments, 1
+ * @return int Status:  0, OK, !0, ERROR
+ */
+int cli_cmd_assert(int argc, char *argv[])
+{
+    int iRetCode = SHELL_RET_OK;
+
+    if ( argc != 1U )
+    {
+        iRetCode = SHELL_RET_ERR;
+        shell_put_line(SHELL_STR_ERR);
+    }
+    else
+    {
+        shell_put_line(SHELL_STR_OK);
+        ERR_ASSERT(0U);
     }
 
     return iRetCode;
