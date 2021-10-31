@@ -1,0 +1,36 @@
+{
+    "configurations": [
+        {
+            "name": "ARM GNU",
+            "defines": [
+                "USE_HAL_DRIVER",
+                "STM32F446xx",
+                "PRINTF_INCLUDE_CONFIG_H"
+            ],
+            "includePath": [
+                "App/Inc",
+                "Lib/SWO/Inc",
+                "Lib/printf/Inc",
+                "Sys/Sys_Common/Inc",
+                "Sys/Sys_Log/Inc",
+                "Sys/Sys_HAL/Inc",
+                "Sys/Sys_Error/Inc",
+                "Drivers/STM32F4xx_HAL_Driver/Inc",
+                "Drivers/STM32F4xx_HAL_Driver/Inc/Legacy",
+                "Middlewares/Third_Party/FreeRTOS/Source/include",
+                "Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS_V2",
+                "Middlewares/Third_Party/FreeRTOS/Source/portable/GCC/ARM_CM4F",
+                "Drivers/CMSIS/Device/ST/STM32F4xx/Include",
+                "Drivers/CMSIS/Include",
+                "${default}",
+                "./**"
+            ],
+            "windowsSdkVersion": "10.0.19041.0",
+            "compilerPath": "${config:ARMToolChainPath}/arm-none-eabi-gcc.exe",
+            "cStandard": "c99",
+            "cppStandard": "gnu++11",
+            "intelliSenseMode": "gcc-arm"
+        }
+    ],
+    "version": 4
+}

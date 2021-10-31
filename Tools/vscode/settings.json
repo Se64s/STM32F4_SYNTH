@@ -1,0 +1,8 @@
+{
+    "python.pythonPath": "C:\\<user_path_to_python>\\python.exe",
+    "JlinkGDBServer": "C:\\Program Files (x86)\\SEGGER\\JLink\\JLinkGDBServerCL.exe",
+    "JlinkSWOViewer": "C:\\Program Files (x86)\\SEGGER\\JLink\\JLinkSWOViewerCL.exe",
+    "JlinkApp": "C:\\Program Files (x86)\\SEGGER\\JLink\\Jlink.exe",
+    "SeggerOzonePath": "",
+    "ARMToolChainPath": "C:/<user_path_to_arm_toolchain>/arm_toochain/bin",
+}

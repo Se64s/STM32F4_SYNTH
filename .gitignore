@@ -50,3 +50,9 @@ modules.order
 Module.symvers
 Mkfile.old
 dkms.conf
+
+# Remove output folder
+build/
+
+# vscode folder
+.vscode/
