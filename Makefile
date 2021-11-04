@@ -39,6 +39,7 @@ Device/system_stm32f4xx.c \
 Lib/SWO/Src/swo.c \
 Lib/printf/Src/printf.c \
 Lib/Shell/Src/shell.c \
+Lib/wavetable/Src/wavetable.c \
 Sys/Sys_Common/Src/sys_common.c \
 Sys/Sys_Log/Src/sys_log.c \
 Sys/Sys_Error/Src/user_assert.c \
@@ -52,6 +53,9 @@ Sys/Sys_HAL/Src/stm32f4xx_sys_hal_tim.c \
 Sys/Sys_HAL/Src/stm32f4xx_sys_hal_usart.c \
 Sys/Sys_HAL/Src/stm32f4xx_sys_hal_dma.c \
 Sys/Sys_HAL/Src/stm32f4xx_sys_hal_adc.c \
+Sys/Sys_HAL/Src/stm32f4xx_sys_hal_i2s.c \
+Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_i2s.c \
+Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_i2s_ex.c \
 Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_adc.c \
 Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_adc_ex.c \
 Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_dac.c \
@@ -142,6 +146,7 @@ C_INCLUDES =  \
 -ILib/SWO/Inc \
 -ILib/printf/Inc \
 -ILib/Shell/Inc \
+-ILib/wavetable/Inc \
 -ISys/Sys_Common/Inc \
 -ISys/Sys_Log/Inc \
 -ISys/Sys_HAL/Inc \

@@ -27,18 +27,28 @@ extern "C" {
  * 
  */
 typedef enum {
-    SYS_GPIO_PORT_0   = 0,
-    SYS_GPIO_PORT_NUM,
+    SYS_GPIO_0   = 0,
+    SYS_GPIO_NUM,
 } sys_gpio_port_id_t;
 
 /**
- * @brief GPIO pin.
+ * @brief GPIO modes.
  * 
  */
 typedef enum {
-    SYS_GPIO_PIN_0   = 0,
-    SYS_GPIO_PIN_NUM,
-} sys_gpio_pin_id_t;
+    SYS_GPIO_MODE_OUT = 1,
+    SYS_GPIO_MODE_NUM,
+} sys_gpio_mode_t;
+
+/**
+ * @brief GPIO defined states.
+ * 
+ */
+typedef enum {
+    SYS_GPIO_STATE_RESET  = 0,
+    SYS_GPIO_STATE_SET    = 1,
+    SYS_GPIO_STATE_NUM,
+} sys_gpio_state_t;
 
 /* Exported constants --------------------------------------------------------*/
 /* Exported macro ------------------------------------------------------------*/
@@ -51,7 +61,15 @@ typedef enum {
  * @param ePinId pin id
  * @return sys_state_t operation result.
  */
-sys_state_t sys_gpio_init(sys_gpio_port_id_t ePortId, sys_gpio_pin_id_t ePinId);
+sys_state_t sys_gpio_init(sys_gpio_port_id_t ePortId, sys_gpio_mode_t eMode);
+
+/**
+ * @brief Set state in gpio in output mode
+ * 
+ * @param ePortId gpio id
+ * @param eState new state to set
+ */
+void sys_gpio_set_level(sys_gpio_port_id_t ePortId, sys_gpio_state_t eState);
 
 #ifdef __cplusplus
 }

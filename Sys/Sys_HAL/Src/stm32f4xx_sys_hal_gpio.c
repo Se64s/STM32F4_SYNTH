@@ -34,14 +34,47 @@ void MX_GPIO_Init(void)
 
 /* Public functions ----------------------------------------------------------*/
 
-sys_state_t sys_gpio_init(sys_gpio_port_id_t ePortId, sys_gpio_pin_id_t ePinId)
+sys_state_t sys_gpio_init(sys_gpio_port_id_t ePortId, sys_gpio_mode_t eMode)
 {
-    ERR_ASSERT(ePortId < SYS_GPIO_PORT_NUM);
-    ERR_ASSERT(ePinId < SYS_GPIO_PIN_NUM);
+    ERR_ASSERT(ePortId < SYS_GPIO_NUM);
+    ERR_ASSERT(eMode < SYS_GPIO_MODE_NUM);
 
-    MX_GPIO_Init();
+    GPIO_InitTypeDef GPIO_InitStruct = {0};
+
+    if ( ePortId == SYS_GPIO_0 )
+    {
+        if (eMode == SYS_GPIO_MODE_OUT)
+        {
+            __HAL_RCC_GPIOC_CLK_ENABLE();
+
+            GPIO_InitStruct.Pin = GPIO_PIN_8;
+            GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+            GPIO_InitStruct.Pull = GPIO_NOPULL;
+            GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
+            HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
+        }
+    }
 
     return SYS_SUCCESS;
+}
+
+void sys_gpio_set_level(sys_gpio_port_id_t ePortId, sys_gpio_state_t eState)
+{
+    ERR_ASSERT(ePortId < SYS_GPIO_NUM);
+    ERR_ASSERT(eState < SYS_GPIO_STATE_NUM);
+
+    if ( ePortId == SYS_GPIO_0 )
+    {
+        if ( eState == SYS_GPIO_STATE_RESET )
+        {
+            
+            GPIOC->BSRR = (uint32_t)GPIO_PIN_8 << 16U;
+        }
+        else
+        {
+            GPIOC->BSRR = GPIO_PIN_8;
+        }
+    }
 }
 
 /* EOF */

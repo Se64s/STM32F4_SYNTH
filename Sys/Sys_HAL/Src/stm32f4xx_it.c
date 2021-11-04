@@ -30,6 +30,7 @@
 /* Private function prototypes -----------------------------------------------*/
 /* Private user code ---------------------------------------------------------*/
 /* External variables --------------------------------------------------------*/
+extern I2S_HandleTypeDef hi2s2;
 extern UART_HandleTypeDef huart2;
 extern UART_HandleTypeDef huart3;
 extern DMA_HandleTypeDef hdma_adc1;
@@ -37,6 +38,7 @@ extern DMA_HandleTypeDef hdma_dac1;
 extern DMA_HandleTypeDef hdma_dac2;
 extern DMA_HandleTypeDef hdma_usart3_rx;
 extern DMA_HandleTypeDef hdma_usart3_tx;
+extern DMA_HandleTypeDef hdma_spi2_tx;
 
 /******************************************************************************/
 /*           Cortex-M4 Processor Interruption and Exception Handlers          */
@@ -160,6 +162,22 @@ void DMA1_Stream6_IRQHandler(void)
 void DMA2_Stream0_IRQHandler(void)
 {
     HAL_DMA_IRQHandler(&hdma_adc1);
+}
+
+/**
+  * @brief This function handles DMA1 stream4 global interrupt.
+  */
+void DMA1_Stream4_IRQHandler(void)
+{
+    HAL_DMA_IRQHandler(&hdma_spi2_tx);
+}
+
+/**
+  * @brief This function handles SPI2 global interrupt.
+  */
+void SPI2_IRQHandler(void)
+{
+    HAL_I2S_IRQHandler(&hi2s2);
 }
 
 /**

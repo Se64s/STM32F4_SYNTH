@@ -114,6 +114,7 @@ void HAL_UART_MspInit(UART_HandleTypeDef* uartHandle)
     else if(uartHandle->Instance==USART3)
     {
         /* USART3 clock enable */
+        __HAL_RCC_DMA1_CLK_ENABLE();
         __HAL_RCC_USART3_CLK_ENABLE();
 
         __HAL_RCC_GPIOC_CLK_ENABLE();
