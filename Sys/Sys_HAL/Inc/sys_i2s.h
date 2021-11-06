@@ -73,6 +73,14 @@ sys_state_t sys_i2s_deinit(sys_i2s_id_t eId);
  */
 sys_state_t sys_i2s_send(sys_i2s_id_t eId, uint16_t *pu16Data, uint16_t u16DataLen);
 
+/**
+ * @brief Control ISR in i2s peripheral.
+ * 
+ * @param eId Interface Id.
+ * @param bState true enable isr, false disable isr.
+ * @return sys_state_t operation result.
+ */
+sys_state_t sys_i2s_isr_ctrl(sys_i2s_id_t eId, bool bState);
 
 #ifdef __cplusplus
 }

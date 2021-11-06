@@ -20,6 +20,7 @@ extern "C" {
 /* Includes ------------------------------------------------------------------*/
 #include "stdint.h"
 #include "stddef.h"
+#include "stdbool.h"
 
 /* Exported types ------------------------------------------------------------*/
 
@@ -50,13 +51,14 @@ typedef enum {
  * 
  */
 typedef struct waveTableVoice {
-    float fFreq;
-    float fCurrentSample;
-    float fMaxAmplitude;
-    uint32_t u32SampleRate;
-    const float *pu32WaveTable;
-    uint32_t u32WaveTableSize;
-    wave_id_t eWaveId;
+    bool bActive;                   /**< State of current voice */
+    float fFreq;                    /**< Current frequency in Hz */
+    float fCurrentSample;           /**< Index of current sample */
+    float fMaxAmplitude;            /**< Maz signal amplitude */
+    uint32_t u32SampleRate;         /**< Signal sample rate */
+    const float *pu32WaveTable;     /**< Pointer to wave table in flash */
+    uint32_t u32WaveTableSize;      /**< Size of wave table */
+    wave_id_t eWaveId;              /**< Selector of wave table */
 } waveTableVoice_t;
 
 /* Exported constants --------------------------------------------------------*/
@@ -89,6 +91,15 @@ wave_ret_t WAVE_change_wave(waveTableVoice_t *pVoice, wave_id_t eWave);
  * @return wave_ret_t operation result.
  */
 wave_ret_t WAVE_update_freq(waveTableVoice_t *pVoice, float fFreq);
+
+/**
+ * @brief Set active state in provided voice.
+ * 
+ * @param pVoice pointer to voice to activate.
+ * @param bState new state to set, tru voice on, false voice off.
+ * @return wave_ret_t operation result.
+ */
+wave_ret_t WAVE_set_active(waveTableVoice_t *pVoice, bool bState);
 
 /**
  * @brief Get next sample of wave voice.

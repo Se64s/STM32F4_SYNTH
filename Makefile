@@ -34,12 +34,13 @@ App/Src/main.c \
 App/Src/freertos.c \
 App/Src/cli_task.c \
 App/Src/cli_usr_cmd.c \
-App/Src/test_task.c \
+App/Src/audio_task.c \
 Device/system_stm32f4xx.c \
 Lib/SWO/Src/swo.c \
 Lib/printf/Src/printf.c \
 Lib/Shell/Src/shell.c \
 Lib/wavetable/Src/wavetable.c \
+Lib/audio_engine/Src/audio_engine.c \
 Sys/Sys_Common/Src/sys_common.c \
 Sys/Sys_Log/Src/sys_log.c \
 Sys/Sys_Error/Src/user_assert.c \
@@ -147,6 +148,7 @@ C_INCLUDES =  \
 -ILib/printf/Inc \
 -ILib/Shell/Inc \
 -ILib/wavetable/Inc \
+-ILib/audio_engine/Inc \
 -ISys/Sys_Common/Inc \
 -ISys/Sys_Log/Inc \
 -ISys/Sys_HAL/Inc \

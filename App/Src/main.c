@@ -16,7 +16,7 @@
 #include "sys_mcu.h"
 #include "sys_log.h"
 
-#include "test_task.h"
+#include "audio_task.h"
 #include "cli_task.h"
 
 /* Private includes ----------------------------------------------------------*/
@@ -42,7 +42,7 @@ int main(void)
     osKernelInitialize();  /* Call init function for freertos objects (in freertos.c) */
 
     /* Init system tasks */
-    testTask_Init();
+    AudioTask_Init();
     CliTask_Init();
 
     /* Start scheduler */

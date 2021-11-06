@@ -47,6 +47,7 @@ wave_ret_t WAVE_init_voice(waveTableVoice_t *pVoice, uint32_t u32SampleRate, flo
 {
     ERR_ASSERT(pVoice != NULL);
 
+    pVoice->bActive = false;
     pVoice->fCurrentSample = 0.0F;
     pVoice->fFreq = WAVE_DEFAULT_FREQ;
     pVoice->fMaxAmplitude = fMaxAmplitude;
@@ -78,25 +79,39 @@ wave_ret_t WAVE_update_freq(waveTableVoice_t *pVoice, float fFreq)
     return WAVE_OK;
 }
 
+wave_ret_t WAVE_set_active(waveTableVoice_t *pVoice, bool bState)
+{
+    ERR_ASSERT(pVoice != NULL);
+
+    pVoice->bActive = bState;
+
+    return WAVE_OK;
+}
+
 float WAVE_get_next_sample(waveTableVoice_t *pVoice)
 {
     ERR_ASSERT(pVoice != NULL);
 
-    // Compute linear interpolation
-    uint32_t u32IndexBelow = (uint32_t)pVoice->fCurrentSample;
-    uint32_t u32IndexAbove = (u32IndexBelow + 1U) % pVoice->u32WaveTableSize;
+    float fOutData = 0.0F;
 
-    // Compute weigh for each sample
-    float fFractionAbove = pVoice->fCurrentSample - (float)u32IndexBelow;
-    float fFractionBelow = 1.0F - fFractionAbove;
-
-    float fOutData = pVoice->fMaxAmplitude * ( fFractionAbove * pVoice->pu32WaveTable[u32IndexAbove] + fFractionBelow * pVoice->pu32WaveTable[u32IndexBelow] );
-
-    // Compute next sample index from wavetable
-    pVoice->fCurrentSample += (pVoice->u32WaveTableSize * pVoice->fFreq) / pVoice->u32SampleRate;
-    while (pVoice->fCurrentSample >= (float)pVoice->u32WaveTableSize)
+    if ( pVoice->bActive )
     {
-        pVoice->fCurrentSample -= (float)pVoice->u32WaveTableSize;
+        // Compute linear interpolation
+        uint32_t u32IndexBelow = (uint32_t)pVoice->fCurrentSample;
+        uint32_t u32IndexAbove = (u32IndexBelow + 1U) % pVoice->u32WaveTableSize;
+
+        // Compute weigh for each sample
+        float fFractionAbove = pVoice->fCurrentSample - (float)u32IndexBelow;
+        float fFractionBelow = 1.0F - fFractionAbove;
+
+        fOutData = pVoice->fMaxAmplitude * ( fFractionAbove * pVoice->pu32WaveTable[u32IndexAbove] + fFractionBelow * pVoice->pu32WaveTable[u32IndexBelow] );
+
+        // Compute next sample index from wavetable
+        pVoice->fCurrentSample += (pVoice->u32WaveTableSize * pVoice->fFreq) / pVoice->u32SampleRate;
+        while (pVoice->fCurrentSample >= (float)pVoice->u32WaveTableSize)
+        {
+            pVoice->fCurrentSample -= (float)pVoice->u32WaveTableSize;
+        }
     }
 
     return fOutData;

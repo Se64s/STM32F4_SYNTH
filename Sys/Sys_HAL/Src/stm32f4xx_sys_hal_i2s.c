@@ -44,9 +44,9 @@ void MX_I2S2_Init(void)
     hi2s2.Instance = SPI2;
     hi2s2.Init.Mode = I2S_MODE_MASTER_TX;
     hi2s2.Init.Standard = I2S_STANDARD_PHILIPS;
-    hi2s2.Init.DataFormat = I2S_DATAFORMAT_32B;
+    hi2s2.Init.DataFormat = I2S_DATAFORMAT_16B;
     hi2s2.Init.MCLKOutput = I2S_MCLKOUTPUT_DISABLE;
-    hi2s2.Init.AudioFreq = I2S_AUDIOFREQ_192K;
+    hi2s2.Init.AudioFreq = I2S_AUDIOFREQ_48K;
     hi2s2.Init.CPOL = I2S_CPOL_LOW;
     hi2s2.Init.ClockSource = I2S_CLOCK_PLL;
     hi2s2.Init.FullDuplexMode = I2S_FULLDUPLEXMODE_DISABLE;
@@ -136,8 +136,6 @@ void HAL_I2S_MspDeInit(I2S_HandleTypeDef* i2sHandle)
 
         /* I2S2 DMA DeInit */
         HAL_DMA_DeInit(i2sHandle->hdmatx);
-
-        HAL_NVIC_DisableIRQ(SPI2_IRQn);
     }
 }
 
@@ -241,6 +239,29 @@ sys_state_t sys_i2s_send(sys_i2s_id_t eId, uint16_t *pu16Data, uint16_t u16DataL
         {
             eRetval = (eHalResult == HAL_BUSY) ? SYS_BUSY : SYS_ERROR;
         }
+    }
+
+    return eRetval;
+}
+
+sys_state_t sys_i2s_isr_ctrl(sys_i2s_id_t eId, bool bState)
+{
+    ERR_ASSERT(eId < SYS_I2S_NUM);
+
+    sys_state_t eRetval = SYS_PARAM_ERROR;
+
+    if ( eId == SYS_I2S_0)
+    {
+        if ( bState )
+        {
+            HAL_NVIC_EnableIRQ(DMA1_Stream4_IRQn);
+        }
+        else
+        {
+            HAL_NVIC_DisableIRQ(DMA1_Stream4_IRQn);
+        }
+
+        eRetval = SYS_SUCCESS;
     }
 
     return eRetval;
