@@ -30,15 +30,19 @@ extern "C" {
  * 
  */
 typedef enum {
-    SYS_SUCCESS     = 0,
-    SYS_BUSY        = 1,
-    SYS_PARAM_ERROR = 2,
-    SYS_ERROR       = 3,
-    SYS_NOT_INIT    = 4,
+    SYS_SUCCESS     = 0U,
+    SYS_BUSY        = 1U,
+    SYS_PARAM_ERROR = 2U,
+    SYS_ERROR       = 3U,
+    SYS_NOT_INIT    = 4U,
 } sys_state_t;
 
 /* Exported constants --------------------------------------------------------*/
 /* Exported macro ------------------------------------------------------------*/
+
+/* Check event bit */
+#define SYS_CHECK_EVT(flag, evt_id)     ( ((flag) & (evt_id)) == (evt_id) )
+
 /* Exported functions prototypes ---------------------------------------------*/
 
 #ifdef __cplusplus

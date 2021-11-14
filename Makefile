@@ -35,7 +35,10 @@ App/Src/freertos.c \
 App/Src/cli_task.c \
 App/Src/cli_usr_cmd.c \
 App/Src/audio_task.c \
+App/Src/midi_task.c \
 Device/system_stm32f4xx.c \
+Lib/cbuf/Src/midi_lib.c \
+Lib/midi/Src/circular_buffer.c \
 Lib/SWO/Src/swo.c \
 Lib/printf/Src/printf.c \
 Lib/Shell/Src/shell.c \
@@ -149,6 +152,8 @@ C_INCLUDES =  \
 -ILib/Shell/Inc \
 -ILib/wavetable/Inc \
 -ILib/audio_engine/Inc \
+-ILib/cbuf/Inc \
+-ILib/midi/Inc \
 -ISys/Sys_Common/Inc \
 -ISys/Sys_Log/Inc \
 -ISys/Sys_HAL/Inc \

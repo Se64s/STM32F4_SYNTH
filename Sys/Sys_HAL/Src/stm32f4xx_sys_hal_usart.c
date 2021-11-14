@@ -69,7 +69,7 @@ void MX_USART2_UART_Init(void)
 void MX_USART3_UART_Init(void)
 {
     huart3.Instance = USART3;
-    huart3.Init.BaudRate = 115200;
+    huart3.Init.BaudRate = 31250U;
     huart3.Init.WordLength = UART_WORDLENGTH_8B;
     huart3.Init.StopBits = UART_STOPBITS_1;
     huart3.Init.Parity = UART_PARITY_NONE;
@@ -268,7 +268,7 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
     }
 }
 
-void HAL_UART_AbortReceiveCpltCallback(UART_HandleTypeDef *huart)
+void HAL_UART_AbortCpltCallback(UART_HandleTypeDef *huart)
 {
     usart_handler_t * pHandler = NULL;
 
@@ -407,7 +407,16 @@ uint16_t sys_usart_get_read_count(sys_usart_id_t eId)
 {
     ERR_ASSERT(eId < SYS_USART_NUM);
 
-    uint16_t u16RedData = usart_handler_list[eId]->handler->RxXferCount;
+    uint16_t u16RedData = 0U;
+
+    if ( eId == SYS_USART_0)
+    {
+        u16RedData = usart_handler_list[eId]->handler->RxXferCount;
+    }
+    else if ( eId == SYS_USART_1)
+    {
+        u16RedData = usart_handler_list[eId]->handler->RxXferSize - usart_handler_list[eId]->handler->hdmarx->Instance->NDTR;
+    }
 
     return u16RedData;
 }

@@ -18,6 +18,7 @@
 
 #include "audio_task.h"
 #include "cli_task.h"
+#include "midi_task.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* Private typedef -----------------------------------------------------------*/
@@ -44,6 +45,7 @@ int main(void)
     /* Init system tasks */
     AudioTask_Init();
     CliTask_Init();
+    MidiTask_Init();
 
     /* Start scheduler */
     osKernelStart();

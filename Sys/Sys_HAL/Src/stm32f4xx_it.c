@@ -193,7 +193,7 @@ void USART2_IRQHandler(void)
         __HAL_UART_CLEAR_IDLEFLAG(&huart2);
 
         /* Abort current reception and pass control to driver callback */
-        HAL_UART_AbortReceiveCpltCallback(&huart2);
+        HAL_UART_Abort_IT(&huart2);
     }
 }
 
@@ -210,7 +210,7 @@ void USART3_IRQHandler(void)
         __HAL_UART_CLEAR_IDLEFLAG(&huart3);
 
         /* Abort current reception and pass control to driver callback */
-        HAL_UART_AbortReceiveCpltCallback(&huart3);
+        HAL_UART_Abort_IT(&huart3);
     }
 }
 
