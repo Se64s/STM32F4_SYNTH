@@ -54,7 +54,8 @@ typedef struct waveTableVoice {
     bool bActive;                   /**< State of current voice */
     float fFreq;                    /**< Current frequency in Hz */
     float fCurrentSample;           /**< Index of current sample */
-    float fMaxAmplitude;            /**< Maz signal amplitude */
+    float fMaxAmplitude;            /**< Max signal amplitude */
+    float fAmplitude;               /**< Current amplitude */
     uint32_t u32SampleRate;         /**< Signal sample rate */
     const float *pu32WaveTable;     /**< Pointer to wave table in flash */
     uint32_t u32WaveTableSize;      /**< Size of wave table */
@@ -91,6 +92,15 @@ wave_ret_t WAVE_change_wave(waveTableVoice_t *pVoice, wave_id_t eWave);
  * @return wave_ret_t operation result.
  */
 wave_ret_t WAVE_update_freq(waveTableVoice_t *pVoice, float fFreq);
+
+/**
+ * @brief Update voice amplitude
+ * 
+ * @param pVoice pointer of control structure to update.
+ * @param fAmp new amplitude mod (0.0 to 1.0).
+ * @return wave_ret_t operation result.
+ */
+wave_ret_t WAVE_update_amp(waveTableVoice_t *pVoice, float fAmp);
 
 /**
  * @brief Set active state in provided voice.

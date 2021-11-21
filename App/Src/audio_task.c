@@ -54,23 +54,13 @@ static void AudioTask_main(void *argument)
     sys_log_print(AUDIO_IF, AUDIO_LVL, "Init audio engine task");
 
     /* Setup all waves */
-    (void)AUDIO_voice_set_waveform(AUDIO_VOICE_NUM, AUDIO_WAVE_SIN);
+    (void)AUDIO_voice_set_waveform(AUDIO_VOICE_NUM, AUDIO_WAVE_TRI);
 
     /* Infinite loop */
     for(;;)
     {
-        /* Add all voices */
-        float base_note = 440.0;
+        sys_log_print(AUDIO_IF, AUDIO_LVL, "Audio task tick");
 
-        for (uint32_t voice = 0U; voice < (uint32_t)AUDIO_VOICE_NUM; voice++)
-        {
-            // (void)AUDIO_voice_update(voice, AUDIO_WAVE_SIN, base_note * (voice + 1U), true);
-            (void)AUDIO_voice_update(AUDIO_VOICE_NUM, AUDIO_WAVE_SIN, base_note * (voice + 1U), true);
-            osDelay(1000U);
-        }
-
-        /* Clear all voices */
-        (void)AUDIO_voice_set_state(AUDIO_VOICE_NUM, false);
         osDelay(1000U);
     }
 }

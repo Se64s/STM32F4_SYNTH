@@ -86,6 +86,16 @@ sys_state_t AUDIO_voice_set_state(audio_voice_id_t eVoice, bool bState);
 sys_state_t AUDIO_voice_set_freq(audio_voice_id_t eVoice, float fFreq);
 
 /**
+ * @brief Set voice frequency from midi note.
+ * 
+ * @param eVoice voice to update.
+ * @param u8MidiNote midi note.
+ * @param u8MidiVel midi velocity.
+ * @return sys_state_t operation result.
+ */
+sys_state_t AUDIO_voice_set_midi_note(audio_voice_id_t eVoice, uint8_t u8MidiNote, uint8_t u8MidiVel);
+
+/**
  * @brief Change current voice waveform.
  * 
  * @param eVoice voice id to update.

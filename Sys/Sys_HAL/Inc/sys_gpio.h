@@ -28,6 +28,7 @@ extern "C" {
  */
 typedef enum {
     SYS_GPIO_0   = 0,
+    SYS_GPIO_1,
     SYS_GPIO_NUM,
 } sys_gpio_port_id_t;
 

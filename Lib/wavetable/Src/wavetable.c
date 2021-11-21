@@ -51,6 +51,7 @@ wave_ret_t WAVE_init_voice(waveTableVoice_t *pVoice, uint32_t u32SampleRate, flo
     pVoice->fCurrentSample = 0.0F;
     pVoice->fFreq = WAVE_DEFAULT_FREQ;
     pVoice->fMaxAmplitude = fMaxAmplitude;
+    pVoice->fAmplitude = 1.0F;
     pVoice->u32SampleRate = u32SampleRate;
     pVoice->u32WaveTableSize = WAVE_TABLE_SIZE;
     pVoice->eWaveId = WAVE_DEFAULT_WAVE;
@@ -79,11 +80,27 @@ wave_ret_t WAVE_update_freq(waveTableVoice_t *pVoice, float fFreq)
     return WAVE_OK;
 }
 
+wave_ret_t WAVE_update_amp(waveTableVoice_t *pVoice, float fAmp)
+{
+    ERR_ASSERT(pVoice != NULL);
+    ERR_ASSERT(fAmp >= 0.0F);
+    ERR_ASSERT(fAmp <= 1.0F);
+
+    pVoice->fAmplitude = fAmp * pVoice->fMaxAmplitude;
+
+    return WAVE_OK;
+}
+
 wave_ret_t WAVE_set_active(waveTableVoice_t *pVoice, bool bState)
 {
     ERR_ASSERT(pVoice != NULL);
 
     pVoice->bActive = bState;
+
+    if ( !bState )
+    {
+        pVoice->fCurrentSample = 0.0F;
+    }
 
     return WAVE_OK;
 }
@@ -104,7 +121,7 @@ float WAVE_get_next_sample(waveTableVoice_t *pVoice)
         float fFractionAbove = pVoice->fCurrentSample - (float)u32IndexBelow;
         float fFractionBelow = 1.0F - fFractionAbove;
 
-        fOutData = pVoice->fMaxAmplitude * ( fFractionAbove * pVoice->pu32WaveTable[u32IndexAbove] + fFractionBelow * pVoice->pu32WaveTable[u32IndexBelow] );
+        fOutData = pVoice->fAmplitude * ( fFractionAbove * pVoice->pu32WaveTable[u32IndexAbove] + fFractionBelow * pVoice->pu32WaveTable[u32IndexBelow] );
 
         // Compute next sample index from wavetable
         pVoice->fCurrentSample += (pVoice->u32WaveTableSize * pVoice->fFreq) / pVoice->u32SampleRate;

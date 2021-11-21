@@ -54,6 +54,19 @@ sys_state_t sys_gpio_init(sys_gpio_port_id_t ePortId, sys_gpio_mode_t eMode)
             HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
         }
     }
+    else if ( ePortId == SYS_GPIO_1 )
+    {
+        if (eMode == SYS_GPIO_MODE_OUT)
+        {
+            __HAL_RCC_GPIOC_CLK_ENABLE();
+
+            GPIO_InitStruct.Pin = GPIO_PIN_9;
+            GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+            GPIO_InitStruct.Pull = GPIO_NOPULL;
+            GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
+            HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
+        }
+    }
 
     return SYS_SUCCESS;
 }
@@ -73,6 +86,18 @@ void sys_gpio_set_level(sys_gpio_port_id_t ePortId, sys_gpio_state_t eState)
         else
         {
             GPIOC->BSRR = GPIO_PIN_8;
+        }
+    }
+    else if ( ePortId == SYS_GPIO_1 )
+    {
+        if ( eState == SYS_GPIO_STATE_RESET )
+        {
+            
+            GPIOC->BSRR = (uint32_t)GPIO_PIN_9 << 16U;
+        }
+        else
+        {
+            GPIOC->BSRR = GPIO_PIN_9;
         }
     }
 }
