@@ -43,8 +43,11 @@ Lib/midi/Src/midi_lib.c \
 Lib/SWO/Src/swo.c \
 Lib/printf/Src/printf.c \
 Lib/Shell/Src/shell.c \
-Lib/wavetable/Src/wavetable.c \
-Lib/audio_engine/Src/audio_engine.c \
+Lib/audio_lib/Src/audio_engine.c \
+Lib/audio_lib/Src/audio_envelope.c \
+Lib/audio_lib/Src/audio_filter.c \
+Lib/audio_lib/Src/audio_wavetable.c \
+Lib/audio_lib/Src/audio_hal.c \
 Sys/Sys_Common/Src/sys_common.c \
 Sys/Sys_Log/Src/sys_log.c \
 Sys/Sys_Error/Src/user_assert.c \
@@ -151,8 +154,7 @@ C_INCLUDES =  \
 -ILib/SWO/Inc \
 -ILib/printf/Inc \
 -ILib/Shell/Inc \
--ILib/wavetable/Inc \
--ILib/audio_engine/Inc \
+-ILib/audio_lib/Inc \
 -ILib/cbuf/Inc \
 -ILib/midi/Inc \
 -ISys/Sys_Common/Inc \

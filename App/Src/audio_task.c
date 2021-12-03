@@ -77,7 +77,7 @@ void AudioTask_Init(void)
     AudioTaskHandle = osThreadNew(AudioTask_main, NULL, &AudioTask_attributes);
     ERR_ASSERT(AudioTaskHandle != NULL);
 
-    ERR_ASSERT(AUDIO_init() == SYS_SUCCESS);
+    ERR_ASSERT(AUDIO_init() == AUDIO_WAVE_OK);
 }
 
 /* EOF */

@@ -18,72 +18,44 @@ extern "C" {
 #endif
 
 /* Includes ------------------------------------------------------------------*/
-#include "sys_common.h"
+#include "audio_common.h"
 
 /* Exported types ------------------------------------------------------------*/
-
-/** Identifier for all available voices */
-typedef enum audio_voice_id {
-    AUDIO_VOICE_0 = 0U,
-    AUDIO_VOICE_1 = 1U,
-    AUDIO_VOICE_2 = 2U,
-    AUDIO_VOICE_3 = 3U,
-    AUDIO_VOICE_4 = 4U,
-    AUDIO_VOICE_5 = 5U,
-    AUDIO_VOICE_6 = 6U,
-    AUDIO_VOICE_7 = 7U,
-    AUDIO_VOICE_NUM
-} audio_voice_id_t;
-
-/** Waveform ids */
-typedef enum {
-    AUDIO_WAVE_SAW  = 0U,
-    AUDIO_WAVE_RSAW = 1U,
-    AUDIO_WAVE_SQR  = 2U,
-    AUDIO_WAVE_SIN  = 3U,
-    AUDIO_WAVE_TRI  = 4U,
-    AUDIO_WAVE_NUM
-} audio_wave_id_t;
-
 /* Exported constants --------------------------------------------------------*/
 /* Exported macro ------------------------------------------------------------*/
-
-/* Uncomment to enable GPIO toggle for transfer time tracking */
-#define AUDIO_TRASNFER_TRACE
-
 /* Exported functions prototypes ---------------------------------------------*/
 
 /**
  * @brief Initiate audio engine resources.
  * 
- * @return sys_state_t operation result.
+ * @return audio_ret_t operation result.
  */
-sys_state_t AUDIO_init(void);
+audio_ret_t AUDIO_init(void);
 
 /**
  * @brief Release audio engine resources.
  * 
- * @return sys_state_t operation result.
+ * @return audio_ret_t operation result.
  */
-sys_state_t AUDIO_deinit(void);
+audio_ret_t AUDIO_deinit(void);
 
 /**
  * @brief Update frquency of voice.
  * 
  * @param eVoice voice id to update.
  * @param bState new state, true for enable outrput, folse for disable output.
- * @return sys_state_t operation result.
+ * @return audio_ret_t operation result.
  */
-sys_state_t AUDIO_voice_set_state(audio_voice_id_t eVoice, bool bState);
+audio_ret_t AUDIO_voice_set_state(audio_voice_id_t eVoice, bool bState);
 
 /**
  * @brief Update voice frequency.
  * 
  * @param eVoice voice id to update.
  * @param fFreq new frequency to apply on voice.
- * @return sys_state_t operation result.
+ * @return audio_ret_t operation result.
  */
-sys_state_t AUDIO_voice_set_freq(audio_voice_id_t eVoice, float fFreq);
+audio_ret_t AUDIO_voice_set_freq(audio_voice_id_t eVoice, float fFreq);
 
 /**
  * @brief Set voice frequency from midi note.
@@ -91,18 +63,18 @@ sys_state_t AUDIO_voice_set_freq(audio_voice_id_t eVoice, float fFreq);
  * @param eVoice voice to update.
  * @param u8MidiNote midi note.
  * @param u8MidiVel midi velocity.
- * @return sys_state_t operation result.
+ * @return audio_ret_t operation result.
  */
-sys_state_t AUDIO_voice_set_midi_note(audio_voice_id_t eVoice, uint8_t u8MidiNote, uint8_t u8MidiVel);
+audio_ret_t AUDIO_voice_set_midi_note(audio_voice_id_t eVoice, uint8_t u8MidiNote, uint8_t u8MidiVel);
 
 /**
  * @brief Change current voice waveform.
  * 
  * @param eVoice voice id to update.
  * @param eWaveId waveform id to apply.
- * @return sys_state_t operation result.
+ * @return audio_ret_t operation result.
  */
-sys_state_t AUDIO_voice_set_waveform(audio_voice_id_t eVoice, audio_wave_id_t eWaveId);
+audio_ret_t AUDIO_voice_set_waveform(audio_voice_id_t eVoice, audio_wave_id_t eWaveId);
 
 /**
  * @brief Update all waveform parameters
@@ -111,9 +83,9 @@ sys_state_t AUDIO_voice_set_waveform(audio_voice_id_t eVoice, audio_wave_id_t eW
  * @param eWaveId waveform id to apply.
  * @param fFreq new frequency to apply on voice.
  * @param bState new state, true for enable outrput, folse for disable output.
- * @return sys_state_t 
+ * @return audio_ret_t 
  */
-sys_state_t AUDIO_voice_update(audio_voice_id_t eVoice, audio_wave_id_t eWaveId, float fFreq, bool bState);
+audio_ret_t AUDIO_voice_update(audio_voice_id_t eVoice, audio_wave_id_t eWaveId, float fFreq, bool bState);
 
 #ifdef __cplusplus
 }

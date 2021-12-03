@@ -11,26 +11,14 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include "audio_engine.h"
-
-#include "wavetable.h"
+#include "audio_hal.h"
+#include "audio_wavetable.h"
 
 #include "math.h"
-
-#include "sys_i2s.h"
-#ifdef AUDIO_TRASNFER_TRACE
-#include "sys_gpio.h"
-#endif // AUDIO_TRASNFER_TRACE
 
 /* Private includes ----------------------------------------------------------*/
 /* Private typedef -----------------------------------------------------------*/
 /* Private define ------------------------------------------------------------*/
-
-/* Disable codec isr while updating the buffer */
-#define DISABLE_ISR
-
-/* Sys HAL defines */
-#define AUDIO_I2S                   ( SYS_I2S_0 )
-#define AUDIO_TEST_PIN              ( SYS_GPIO_0 )
 
 /* System sample rate in Hz */
 #define AUDIO_SAMPLE_RATE           ( 192000U )
@@ -63,7 +51,7 @@
 /* Private variables ---------------------------------------------------------*/
 
 /* System voice list */
-waveTableVoice_t xVoiceList[AUDIO_VOICE_NUM];
+AudioWaveTableVoice_t xVoiceList[AUDIO_VOICE_NUM];
 
 /* Audio buffer */
 uint16_t u16AudioBuffer[AUDIO_BUFF_SIZE] = { 0U };
@@ -75,7 +63,7 @@ uint16_t u16AudioBuffer[AUDIO_BUFF_SIZE] = { 0U };
  * 
  * @param event sys_i2s event.
  */
-static void audio_i2s_cb(sys_i2s_event_t event);
+static void audio_hal_cb(audio_hal_event_t event);
 
 /**
  * @brief Prepare data in audio buffer.
@@ -99,21 +87,21 @@ static float lin_map(float x, float in_min, float in_max, float out_min, float o
 
 /* Private function definition -----------------------------------------------*/
 
-static void audio_i2s_cb(sys_i2s_event_t event)
+static void audio_hal_cb(audio_hal_event_t event)
 {
     switch ( event )
     {
-        case SYS_I2S_EVENT_TX_DONE:
+        case AUDIO_HAL_EVENT_TX_DONE:
             audio_update_buffer(u16AudioBuffer, AUDIO_BUFF_HALF_INDEX);
             break;
 
-        case SYS_I2S_EVENT_HALF_TX_DONE:
+        case AUDIO_HAL_EVENT_HALF_TX_DONE:
             audio_update_buffer(u16AudioBuffer, AUDIO_BUFF_INIT_INDEX);
             break;
 
-        case SYS_I2S_EVENT_ERROR:
+        case AUDIO_HAL_EVENT_ERROR:
             /* Reset interface */
-            sys_i2s_send(AUDIO_I2S, u16AudioBuffer, AUDIO_TRANSFER_SIZE);
+            AUDIO_HAL_send_buffer(u16AudioBuffer, AUDIO_TRANSFER_SIZE);
             break;
 
         default:
@@ -123,9 +111,7 @@ static void audio_i2s_cb(sys_i2s_event_t event)
 
 static void audio_update_buffer(uint16_t *pu16Buffer, uint16_t u16StartIndex)
 {
-#ifdef AUDIO_TRASNFER_TRACE
-    sys_gpio_set_level(AUDIO_TEST_PIN, SYS_GPIO_STATE_SET);
-#endif // AUDIO_TRASNFER_TRACE
+    AUDIO_HAL_gpio_ctrl(true);
 
     for (uint32_t i = 0; i < AUDIO_HALF_BUFF_SIZE; i += 2U)
     {
@@ -134,7 +120,7 @@ static void audio_update_buffer(uint16_t *pu16Buffer, uint16_t u16StartIndex)
         // Agregate data from all voices
         for (uint32_t u32Voice = 0; u32Voice < (uint32_t)AUDIO_VOICE_NUM; u32Voice++)
         {
-            i16Data += (int16_t)WAVE_get_next_sample(&xVoiceList[u32Voice]);
+            i16Data += (int16_t)AUDIO_WAVE_get_next_sample(&xVoiceList[u32Voice]);
         }
 
         // Channel L
@@ -143,9 +129,7 @@ static void audio_update_buffer(uint16_t *pu16Buffer, uint16_t u16StartIndex)
         pu16Buffer[u16StartIndex++] = (uint16_t)i16Data;
     }
 
-#ifdef AUDIO_TRASNFER_TRACE
-    sys_gpio_set_level(AUDIO_TEST_PIN, SYS_GPIO_STATE_RESET);
-#endif // AUDIO_TRASNFER_TRACE
+    AUDIO_HAL_gpio_ctrl(false);
 }
 
 static float lin_map(float x, float in_min, float in_max, float out_min, float out_max)
@@ -155,106 +139,94 @@ static float lin_map(float x, float in_min, float in_max, float out_min, float o
 
 /* Public function prototypes ------------------------------------------------*/
 
-sys_state_t AUDIO_init(void)
+audio_ret_t AUDIO_init(void)
 {
-    sys_state_t eRetval = SYS_ERROR;
+    audio_ret_t eRetval = AUDIO_WAVE_ERR;
 
     /* Set all voices with known values */
     for (uint32_t u32Voice = 0; u32Voice < (uint32_t)AUDIO_VOICE_NUM; u32Voice++)
     {
-        WAVE_init_voice(&xVoiceList[u32Voice], AUDIO_SAMPLE_RATE, AUDIO_AMPLITUDE);
+        AUDIO_WAVE_init_voice(&xVoiceList[u32Voice], AUDIO_SAMPLE_RATE, AUDIO_AMPLITUDE);
     }
 
-    if ( sys_i2s_init(AUDIO_I2S, audio_i2s_cb) == SYS_SUCCESS
-#ifdef AUDIO_TRASNFER_TRACE
-        && sys_gpio_init(AUDIO_TEST_PIN, SYS_GPIO_MODE_OUT) == SYS_SUCCESS
-#endif // AUDIO_TRASNFER_TRACE
-    )
+    if ( AUDIO_HAL_init(audio_hal_cb) == AUDIO_WAVE_OK )
     {
         /* Start transfer */
-        if ( sys_i2s_send(AUDIO_I2S, u16AudioBuffer, AUDIO_TRANSFER_SIZE) == SYS_SUCCESS )
+        if ( AUDIO_HAL_send_buffer(u16AudioBuffer, AUDIO_TRANSFER_SIZE) == AUDIO_WAVE_OK )
         {
-            eRetval = SYS_SUCCESS;
+            eRetval = AUDIO_WAVE_OK;
         }
     }
 
     return eRetval;
 }
 
-sys_state_t AUDIO_deinit(void)
+audio_ret_t AUDIO_deinit(void)
 {
     /* Set all voices with known values */
     for (uint32_t u32Voice = 0; u32Voice < (uint32_t)AUDIO_VOICE_NUM; u32Voice++)
     {
-        WAVE_init_voice(&xVoiceList[u32Voice], AUDIO_SAMPLE_RATE, AUDIO_AMPLITUDE_NONE);
+        AUDIO_WAVE_init_voice(&xVoiceList[u32Voice], AUDIO_SAMPLE_RATE, AUDIO_AMPLITUDE_NONE);
     }
 
-    return sys_i2s_deinit(AUDIO_I2S);
+    AUDIO_HAL_deinit();
+
+    return AUDIO_WAVE_OK;
 }
 
-sys_state_t AUDIO_voice_set_state(audio_voice_id_t eVoice, bool bState)
+audio_ret_t AUDIO_voice_set_state(audio_voice_id_t eVoice, bool bState)
 {
     ERR_ASSERT(eVoice <= AUDIO_VOICE_NUM);
 
-#ifdef DISABLE_ISR
-    sys_i2s_isr_ctrl(AUDIO_I2S, false);
-#endif // DISABLE_ISR
+    AUDIO_HAL_isr_ctrl(false);
 
     if (eVoice == AUDIO_VOICE_NUM)
     {
         for (uint32_t u32Voice = 0; u32Voice < (uint32_t)AUDIO_VOICE_NUM; u32Voice++)
         {
-            WAVE_set_active(&xVoiceList[u32Voice], bState);
+            AUDIO_WAVE_set_active(&xVoiceList[u32Voice], bState);
         }
     }
     else
     {
-        (void)WAVE_set_active(&xVoiceList[eVoice], bState);
+        (void)AUDIO_WAVE_set_active(&xVoiceList[eVoice], bState);
     }
 
-#ifdef DISABLE_ISR
-    sys_i2s_isr_ctrl(AUDIO_I2S, true);
-#endif // DISABLE_ISR
+    AUDIO_HAL_isr_ctrl(true);
 
-    return SYS_SUCCESS;
+    return AUDIO_WAVE_OK;
 }
 
-sys_state_t AUDIO_voice_set_freq(audio_voice_id_t eVoice, float fFreq)
+audio_ret_t AUDIO_voice_set_freq(audio_voice_id_t eVoice, float fFreq)
 {
     ERR_ASSERT(eVoice <= AUDIO_VOICE_NUM);
 
-#ifdef DISABLE_ISR
-    sys_i2s_isr_ctrl(AUDIO_I2S, false);
-#endif // DISABLE_ISR
+    AUDIO_HAL_isr_ctrl(false);
 
     if (eVoice == AUDIO_VOICE_NUM)
     {
         for (uint32_t u32Voice = 0; u32Voice < (uint32_t)AUDIO_VOICE_NUM; u32Voice++)
         {
-            (void)WAVE_update_freq(&xVoiceList[u32Voice], fFreq);
+            (void)AUDIO_WAVE_update_freq(&xVoiceList[u32Voice], fFreq);
         }
     }
     else
     {
-        (void)WAVE_update_freq(&xVoiceList[eVoice], fFreq);
+        (void)AUDIO_WAVE_update_freq(&xVoiceList[eVoice], fFreq);
     }
 
-#ifdef DISABLE_ISR
-    sys_i2s_isr_ctrl(AUDIO_I2S, true);
-#endif // DISABLE_ISR
+    AUDIO_HAL_isr_ctrl(true);
 
-    return SYS_SUCCESS;
+    return AUDIO_WAVE_OK;
 }
 
-sys_state_t AUDIO_voice_set_midi_note(audio_voice_id_t eVoice, uint8_t u8MidiNote, uint8_t u8MidiVel)
+audio_ret_t AUDIO_voice_set_midi_note(audio_voice_id_t eVoice, uint8_t u8MidiNote, uint8_t u8MidiVel)
 {
     ERR_ASSERT(eVoice <= AUDIO_VOICE_NUM);
     ERR_ASSERT(u8MidiNote <= MAX_MIDI_NOTE);
     ERR_ASSERT(u8MidiVel <= MAX_MIDI_NOTE);
 
-#ifdef DISABLE_ISR
-    sys_i2s_isr_ctrl(AUDIO_I2S, false);
-#endif // DISABLE_ISR
+    AUDIO_HAL_isr_ctrl(false);
 
     float fFreq = 440.0F * powf(2.0F, ((float)u8MidiNote - 69.0F) / 12.0F);
     float fdB = lin_map((int)u8MidiVel, 1.0F, 127.0F, MIN_AMP_DB_MAP, MAX_AMP_DB_MAP);
@@ -265,81 +237,71 @@ sys_state_t AUDIO_voice_set_midi_note(audio_voice_id_t eVoice, uint8_t u8MidiNot
     {
         for (uint32_t u32Voice = 0; u32Voice < (uint32_t)AUDIO_VOICE_NUM; u32Voice++)
         {
-            (void)WAVE_update_freq(&xVoiceList[u32Voice], fFreq);
-            (void)WAVE_update_amp(&xVoiceList[u32Voice], fAmp);
+            (void)AUDIO_WAVE_update_freq(&xVoiceList[u32Voice], fFreq);
+            (void)AUDIO_WAVE_update_amp(&xVoiceList[u32Voice], fAmp);
         }
     }
     else
     {
-        (void)WAVE_update_freq(&xVoiceList[eVoice], fFreq);
-        (void)WAVE_update_amp(&xVoiceList[eVoice], fAmp);
+        (void)AUDIO_WAVE_update_freq(&xVoiceList[eVoice], fFreq);
+        (void)AUDIO_WAVE_update_amp(&xVoiceList[eVoice], fAmp);
     }
 
-#ifdef DISABLE_ISR
-    sys_i2s_isr_ctrl(AUDIO_I2S, true);
-#endif // DISABLE_ISR
+    AUDIO_HAL_isr_ctrl(true);
 
-    return SYS_SUCCESS;
+    return AUDIO_WAVE_OK;
 }
 
-sys_state_t AUDIO_voice_set_waveform(audio_voice_id_t eVoice, audio_wave_id_t eWaveId)
+audio_ret_t AUDIO_voice_set_waveform(audio_voice_id_t eVoice, audio_wave_id_t eWaveId)
 {
     ERR_ASSERT(eVoice <= AUDIO_VOICE_NUM);
     ERR_ASSERT(eWaveId < AUDIO_WAVE_NUM);
 
-#ifdef DISABLE_ISR
-    sys_i2s_isr_ctrl(AUDIO_I2S, false);
-#endif // DISABLE_ISR
+    AUDIO_HAL_isr_ctrl(false);
 
     if (eVoice == AUDIO_VOICE_NUM)
     {
         for (uint32_t u32Voice = 0; u32Voice < (uint32_t)AUDIO_VOICE_NUM; u32Voice++)
         {
-            (void)WAVE_change_wave(&xVoiceList[u32Voice], eWaveId);
+            (void)AUDIO_WAVE_change_wave(&xVoiceList[u32Voice], eWaveId);
         }
     }
     else
     {
-        (void)WAVE_change_wave(&xVoiceList[eVoice], eWaveId);
+        (void)AUDIO_WAVE_change_wave(&xVoiceList[eVoice], eWaveId);
     }
 
-#ifdef DISABLE_ISR
-    sys_i2s_isr_ctrl(AUDIO_I2S, true);
-#endif // DISABLE_ISR
+    AUDIO_HAL_isr_ctrl(true);
 
-    return SYS_SUCCESS;
+    return AUDIO_WAVE_OK;
 }
 
-sys_state_t AUDIO_voice_update(audio_voice_id_t eVoice, audio_wave_id_t eWaveId, float fFreq, bool bState)
+audio_ret_t AUDIO_voice_update(audio_voice_id_t eVoice, audio_wave_id_t eWaveId, float fFreq, bool bState)
 {
     ERR_ASSERT(eVoice <= AUDIO_VOICE_NUM);
     ERR_ASSERT(eWaveId < AUDIO_WAVE_NUM);
 
-#ifdef DISABLE_ISR
-    sys_i2s_isr_ctrl(AUDIO_I2S, false);
-#endif // DISABLE_ISR
+    AUDIO_HAL_isr_ctrl(false);
 
     if (eVoice == AUDIO_VOICE_NUM)
     {
         for (uint32_t u32Voice = 0; u32Voice < (uint32_t)AUDIO_VOICE_NUM; u32Voice++)
         {
-            (void)WAVE_update_freq(&xVoiceList[u32Voice], fFreq);
-            (void)WAVE_change_wave(&xVoiceList[u32Voice], eWaveId);
-            (void)WAVE_set_active(&xVoiceList[u32Voice], bState);
+            (void)AUDIO_WAVE_update_freq(&xVoiceList[u32Voice], fFreq);
+            (void)AUDIO_WAVE_change_wave(&xVoiceList[u32Voice], eWaveId);
+            (void)AUDIO_WAVE_set_active(&xVoiceList[u32Voice], bState);
         }
     }
     else
     {
-        (void)WAVE_update_freq(&xVoiceList[eVoice], fFreq);
-        (void)WAVE_change_wave(&xVoiceList[eVoice], eWaveId);
-        (void)WAVE_set_active(&xVoiceList[eVoice], bState);
+        (void)AUDIO_WAVE_update_freq(&xVoiceList[eVoice], fFreq);
+        (void)AUDIO_WAVE_change_wave(&xVoiceList[eVoice], eWaveId);
+        (void)AUDIO_WAVE_set_active(&xVoiceList[eVoice], bState);
     }
 
-#ifdef DISABLE_ISR
-    sys_i2s_isr_ctrl(AUDIO_I2S, true);
-#endif // DISABLE_ISR
+    AUDIO_HAL_isr_ctrl(true);
 
-    return SYS_SUCCESS;
+    return AUDIO_WAVE_OK;
 }
 
 /* EOF */
