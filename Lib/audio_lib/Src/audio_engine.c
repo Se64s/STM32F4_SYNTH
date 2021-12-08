@@ -12,9 +12,11 @@
 /* Includes ------------------------------------------------------------------*/
 #include "audio_engine.h"
 #include "audio_hal.h"
+#include "audio_tools.h"
 #include "audio_wavetable.h"
+#include "audio_filter.h"
 
-#include "math.h"
+#include "arm_math.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* Private typedef -----------------------------------------------------------*/
@@ -47,6 +49,10 @@
 #define MAX_AMP_DB_MAP              ( 0.0F )
 #define MIN_AMP_DB_MAP              ( -40.0F )
 
+/* Filter default values */
+#define FILTER_LP_RES_FREQ          ( 50000.0F )
+#define FILTER_LP_RES_Q             ( 1.0F )
+
 /* Private macro -------------------------------------------------------------*/
 /* Private variables ---------------------------------------------------------*/
 
@@ -55,6 +61,9 @@ AudioWaveTableVoice_t xVoiceList[AUDIO_VOICE_NUM];
 
 /* Audio buffer */
 uint16_t u16AudioBuffer[AUDIO_BUFF_SIZE] = { 0U };
+
+/* Filter */
+AudioFilter2ndOrder_t xFilter2ndOrder = { 0U };
 
 /* Private function prototypes -----------------------------------------------*/
 
@@ -72,18 +81,6 @@ static void audio_hal_cb(audio_hal_event_t event);
  * @param u16StartIndex Start of the index where put new data.
  */
 static void audio_update_buffer(uint16_t *pu16Buffer, uint16_t u16StartIndex);
-
-/**
- * @brief Lineal mapping values.
- * 
- * @param x input value to map.
- * @param in_min input min value.
- * @param in_max input max value.
- * @param out_min output max value.
- * @param out_max output max value
- * @return float value scaled.
- */
-static float lin_map(float x, float in_min, float in_max, float out_min, float out_max);
 
 /* Private function definition -----------------------------------------------*/
 
@@ -115,13 +112,17 @@ static void audio_update_buffer(uint16_t *pu16Buffer, uint16_t u16StartIndex)
 
     for (uint32_t i = 0; i < AUDIO_HALF_BUFF_SIZE; i += 2U)
     {
-        int16_t i16Data = 0;
+        float fData = 0.0F;
 
         // Agregate data from all voices
         for (uint32_t u32Voice = 0; u32Voice < (uint32_t)AUDIO_VOICE_NUM; u32Voice++)
         {
-            i16Data += (int16_t)AUDIO_WAVE_get_next_sample(&xVoiceList[u32Voice]);
+            // Agregate all voice data
+            fData += AUDIO_WAVE_get_next_sample(&xVoiceList[u32Voice]);
         }
+
+        // Add filter action
+        int16_t i16Data = (int16_t)AUDIO_FILTER_2nd_order_render(&xFilter2ndOrder, fData);
 
         // Channel L
         pu16Buffer[u16StartIndex++] = (uint16_t)i16Data;
@@ -132,16 +133,14 @@ static void audio_update_buffer(uint16_t *pu16Buffer, uint16_t u16StartIndex)
     AUDIO_HAL_gpio_ctrl(false);
 }
 
-static float lin_map(float x, float in_min, float in_max, float out_min, float out_max)
-{
-    return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
-}
-
 /* Public function prototypes ------------------------------------------------*/
 
 audio_ret_t AUDIO_init(void)
 {
     audio_ret_t eRetval = AUDIO_WAVE_ERR;
+
+    /* Init filter section */
+    AUDIO_FILTER_compute_coefficients_LP_RES(&xFilter2ndOrder, AUDIO_SAMPLE_RATE, FILTER_LP_RES_FREQ, FILTER_LP_RES_Q);
 
     /* Set all voices with known values */
     for (uint32_t u32Voice = 0; u32Voice < (uint32_t)AUDIO_VOICE_NUM; u32Voice++)
@@ -229,7 +228,7 @@ audio_ret_t AUDIO_voice_set_midi_note(audio_voice_id_t eVoice, uint8_t u8MidiNot
     AUDIO_HAL_isr_ctrl(false);
 
     float fFreq = 440.0F * powf(2.0F, ((float)u8MidiNote - 69.0F) / 12.0F);
-    float fdB = lin_map((int)u8MidiVel, 1.0F, 127.0F, MIN_AMP_DB_MAP, MAX_AMP_DB_MAP);
+    float fdB = AUDIO_TOOL_lin_map((int)u8MidiVel, 1.0F, 127.0F, MIN_AMP_DB_MAP, MAX_AMP_DB_MAP);
     float fAmp = powf(10.0F, fdB / 20.0F);
     // float fAmp = 1.0F;
 

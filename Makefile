@@ -47,6 +47,7 @@ Lib/audio_lib/Src/audio_engine.c \
 Lib/audio_lib/Src/audio_envelope.c \
 Lib/audio_lib/Src/audio_filter.c \
 Lib/audio_lib/Src/audio_wavetable.c \
+Lib/audio_lib/Src/audio_tools.c \
 Lib/audio_lib/Src/audio_hal.c \
 Sys/Sys_Common/Src/sys_common.c \
 Sys/Sys_Log/Src/sys_log.c \
@@ -142,7 +143,9 @@ AS_DEFS =
 C_DEFS =  \
 -DUSE_HAL_DRIVER \
 -DSTM32F446xx \
--DPRINTF_INCLUDE_CONFIG_H
+-DPRINTF_INCLUDE_CONFIG_H \
+-DARM_MATH_CM4 \
+-D__FPU_PRESENT
 
 # AS includes
 AS_INCLUDES =  \
@@ -167,7 +170,8 @@ C_INCLUDES =  \
 -IMiddlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS_V2 \
 -IMiddlewares/Third_Party/FreeRTOS/Source/portable/GCC/ARM_CM4F \
 -IDrivers/CMSIS/Device/ST/STM32F4xx/Include \
--IDrivers/CMSIS/Include
+-IDrivers/CMSIS/Include \
+-IDrivers/CMSIS/DSP/Include
 
 # compile gcc flags
 ASFLAGS = $(MCU) $(AS_DEFS) $(AS_INCLUDES) $(OPT) -Wall -fdata-sections -ffunction-sections
@@ -188,8 +192,8 @@ CFLAGS += -MMD -MP -MF"$(@:%.o=%.d)"
 LDSCRIPT = Device/STM32F446RETx_FLASH.ld
 
 # libraries
-LIBS = -lc -lm -lnosys 
-LIBDIR = 
+LIBS = -lc -lm -lnosys -larm_cortexM4lf_math
+LIBDIR = -LDrivers/CMSIS/Lib/GCC
 LDFLAGS = $(MCU) -specs=nano.specs -T$(LDSCRIPT) $(LIBDIR) $(LIBS) -Wl,-Map=$(BUILD_DIR)/$(TARGET).map,--cref -Wl,--gc-sections
 
 # default action: build all
