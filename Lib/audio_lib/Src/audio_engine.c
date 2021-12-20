@@ -15,6 +15,7 @@
 #include "audio_tools.h"
 #include "audio_wavetable.h"
 #include "audio_filter.h"
+#include "audio_delay.h"
 
 #include "arm_math.h"
 
@@ -23,10 +24,12 @@
 /* Private define ------------------------------------------------------------*/
 
 /* System sample rate in Hz */
-#define AUDIO_SAMPLE_RATE           ( 192000U )
+#define AUDIO_SAMPLE_RATE           ( 48000U )
 
 /* Max value for dac */
 #define AUDIO_FULL_AMPLITUDE        ( 32767.0F )
+#define AUDIO_FULL_AMPLITUDE_P      ( 32766 )
+#define AUDIO_FULL_AMPLITUDE_M      ( -32767 )
 #define AUDIO_AMPLITUDE             ( AUDIO_FULL_AMPLITUDE / (float)AUDIO_VOICE_NUM )
 #define AUDIO_AMPLITUDE_NONE        ( 0.0F )
 
@@ -34,6 +37,11 @@
 #define AUDIO_BUFF_DATA_WIDE        ( sizeof(uint16_t) )
 #define AUDIO_BUFF_SIZE             ( 512U )
 #define AUDIO_HALF_BUFF_SIZE        ( AUDIO_BUFF_SIZE / 2U )
+
+/* Delay buffer parameters */
+#define AUDIO_DELAY_BUFF_SIZE       ( 9600U ) // Max 0.2s delay
+#define AUDIO_DELAY_FEDDBACK        ( 0.9F )
+#define AUDIO_DELAY_TIME            ( 0.1F )
 
 /* Audio buffer critical positions for DMA transfer */
 #define AUDIO_BUFF_INIT_INDEX       ( 0U )
@@ -64,6 +72,10 @@ uint16_t u16AudioBuffer[AUDIO_BUFF_SIZE] = { 0U };
 
 /* Filter */
 AudioFilter2ndOrder_t xFilter2ndOrder = { 0U };
+
+/* Delay */
+float fDelayBuffer[AUDIO_DELAY_BUFF_SIZE];
+AudioDelayCtrl_t xDelayCtrl = { 0U };
 
 /* Private function prototypes -----------------------------------------------*/
 
@@ -121,13 +133,27 @@ static void audio_update_buffer(uint16_t *pu16Buffer, uint16_t u16StartIndex)
             fData += AUDIO_WAVE_get_next_sample(&xVoiceList[u32Voice]);
         }
 
+        // Add delay action
+        fData = AUDIO_DELAY_process(&xDelayCtrl, fData);
+
         // Add filter action
-        int16_t i16Data = (int16_t)AUDIO_FILTER_2nd_order_render(&xFilter2ndOrder, fData);
+        fData = AUDIO_FILTER_2nd_order_render(&xFilter2ndOrder, fData);
+
+        // Check DAC boundaries to prevent signal rollback
+        int16_t i16DacData = (int16_t)fData;
+        if ( i16DacData > AUDIO_FULL_AMPLITUDE_P )
+        {
+            i16DacData = AUDIO_FULL_AMPLITUDE_P;
+        }
+        else if ( i16DacData < AUDIO_FULL_AMPLITUDE_M )
+        {
+            i16DacData = AUDIO_FULL_AMPLITUDE_M;
+        }
 
         // Channel L
-        pu16Buffer[u16StartIndex++] = (uint16_t)i16Data;
+        pu16Buffer[u16StartIndex++] = i16DacData;
         // Channel R
-        pu16Buffer[u16StartIndex++] = (uint16_t)i16Data;
+        pu16Buffer[u16StartIndex++] = i16DacData;
     }
 
     AUDIO_HAL_gpio_ctrl(false);
@@ -141,6 +167,11 @@ audio_ret_t AUDIO_init(void)
 
     /* Init filter section */
     AUDIO_FILTER_compute_coefficients_LP_RES(&xFilter2ndOrder, AUDIO_SAMPLE_RATE, FILTER_LP_RES_FREQ, FILTER_LP_RES_Q);
+
+    /* Init delay section */
+    AUDIO_DELAY_init(&xDelayCtrl, AUDIO_SAMPLE_RATE, fDelayBuffer, AUDIO_DELAY_BUFF_SIZE);
+    AUDIO_DELAY_update_delay(&xDelayCtrl, AUDIO_DELAY_TIME);
+    AUDIO_DELAY_update_feedback(&xDelayCtrl, AUDIO_DELAY_FEDDBACK);
 
     /* Set all voices with known values */
     for (uint32_t u32Voice = 0; u32Voice < (uint32_t)AUDIO_VOICE_NUM; u32Voice++)
