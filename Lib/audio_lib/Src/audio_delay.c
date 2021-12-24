@@ -73,6 +73,7 @@ audio_ret_t AUDIO_DELAY_update_feedback(AudioDelayCtrl_t *pxDelayCtrl, float fFe
     if ( (fFeedback >= 0.0F) && (fFeedback < 1.0F) )
     {
         pxDelayCtrl->fFeedback = fFeedback;
+        eRetVal = AUDIO_WAVE_OK;
     }
 
     return eRetVal;

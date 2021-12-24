@@ -20,6 +20,8 @@
 #include "sys_mcu.h"
 #include "sys_log.h"
 
+#include "audio_engine.h"
+
 /* Private defines ---------------------------------------------------------*/
 
 #define SHELL_RET_OK    ( 0 )
@@ -40,11 +42,13 @@ int cli_cmd_assert(int argc, char *argv[]);
 int cli_cmd_logOn(int argc, char *argv[]);
 int cli_cmd_logOff(int argc, char *argv[]);
 int cli_cmd_setLogLvl(int argc, char *argv[]);
+int cli_cmd_delay(int argc, char *argv[]);
 
 /* Private variable --------------------------------------------------------*/
 
 /* List of commands implemented */
 static const sShellCommand s_shell_commands[] = {
+    { "delay", cli_cmd_delay, "Update DELAY section. Time (seconds), Feedback (0-1)" },
     { "logon", cli_cmd_logOn, "Enable global log" },
     { "logoff", cli_cmd_logOff, "Disable global log" },
     { "setloglvl", cli_cmd_setLogLvl, "Set new log level for defined interface. Interface [0-7], Level [0-3]" },
@@ -106,6 +110,58 @@ int cli_cmd_assert(int argc, char *argv[])
     {
         shell_put_line(SHELL_STR_OK);
         ERR_ASSERT(0U);
+    }
+
+    return iRetCode;
+}
+
+/**
+ * @brief Update parameters for delay section
+ * 
+ * @param argc Number of arguments, 3
+ * @param argv List of arguments, argv[0]: cmd name, argv[1] delay time in seconds , argv[2] feedback level (<1)
+ * @return int Status:  0, OK, !0, ERROR
+ */
+int cli_cmd_delay(int argc, char *argv[])
+{
+    int iRetCode = SHELL_RET_OK;
+
+    if ( argc != 3U )
+    {
+        iRetCode = SHELL_RET_ERR;
+    }
+    else
+    {
+        /* Check interface */
+        float fTime = (float)atof(argv[1U]);
+        float fFeedback = (float)atof(argv[2U]);
+
+        if ( fFeedback < 1.0F )
+        {
+            audio_cmd_t xAudioCmd = { 0U };
+
+            xAudioCmd.eCmdId = AUDIO_CMD_UPDATE_DELAY;
+            xAudioCmd.xCmdPayload.xUpdateDelay.fTime = fTime;
+            xAudioCmd.xCmdPayload.xUpdateDelay.fFeedback = fFeedback;
+
+            if (AUDIO_handle_cmd(xAudioCmd) != AUDIO_WAVE_OK)
+            {
+                iRetCode = SHELL_RET_ERR;
+            }
+        }
+        else
+        {
+            shell_put_line("Wrong Feedback value!");
+        }
+    }
+
+    if ( iRetCode == SHELL_RET_OK )
+    {
+        shell_put_line(SHELL_STR_OK);
+    }
+    else
+    {
+        shell_put_line(SHELL_STR_ERR);
     }
 
     return iRetCode;

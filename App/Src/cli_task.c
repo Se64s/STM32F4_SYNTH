@@ -34,7 +34,8 @@
 /* Task internal signals */
 #define EVT_TX_DONE     (uint32_t)(1 << 0)
 #define EVT_RX_DATA     (uint32_t)(1 << 1)
-#define EVT_COM_ERR     (uint32_t)(1 << 2)
+#define EVT_RX_IDLE     (uint32_t)(1 << 2)
+#define EVT_COM_ERR     (uint32_t)(1 << 3)
 
 /* Serial interface use for CLI */
 #define CLI_USART       ( SYS_USART_0 )
@@ -71,6 +72,7 @@ void cli_serial_cb(sys_usart_event_t event)
     switch (event)
     {
         case SYS_USART_EVENT_RX_IDLE:
+            osEventFlagsSet(evt_id, EVT_RX_IDLE);
             break;
 
         case SYS_USART_EVENT_TX_DONE:
@@ -138,7 +140,7 @@ static void CliTask_main(void *argument)
     /* Infinite loop */
     for(;;)
     {
-        uint32_t u32Flags = osEventFlagsWait(evt_id, EVT_RX_DATA | EVT_COM_ERR, osFlagsWaitAny, osWaitForever);
+        uint32_t u32Flags = osEventFlagsWait(evt_id, EVT_RX_DATA | EVT_COM_ERR | EVT_RX_IDLE, osFlagsWaitAny, osWaitForever);
 
         if ( (u32Flags & EVT_RX_DATA) == EVT_RX_DATA )
         {

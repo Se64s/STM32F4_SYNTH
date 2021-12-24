@@ -348,8 +348,6 @@ audio_ret_t AUDIO_init(void)
 
     /* Init delay section */
     AUDIO_DELAY_init(&xDelayCtrl, AUDIO_SAMPLE_RATE, fDelayBuffer, AUDIO_DELAY_BUFF_SIZE);
-    AUDIO_DELAY_update_delay(&xDelayCtrl, AUDIO_DELAY_TIME);
-    AUDIO_DELAY_update_feedback(&xDelayCtrl, AUDIO_DELAY_FEDDBACK);
 
     /* Set all voices with known values */
     for (uint32_t u32Voice = 0; u32Voice < (uint32_t)AUDIO_VOICE_NUM; u32Voice++)
