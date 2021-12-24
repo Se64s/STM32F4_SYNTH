@@ -43,12 +43,14 @@ int cli_cmd_logOn(int argc, char *argv[]);
 int cli_cmd_logOff(int argc, char *argv[]);
 int cli_cmd_setLogLvl(int argc, char *argv[]);
 int cli_cmd_delay(int argc, char *argv[]);
+int cli_cmd_filter(int argc, char *argv[]);
 
 /* Private variable --------------------------------------------------------*/
 
 /* List of commands implemented */
 static const sShellCommand s_shell_commands[] = {
     { "delay", cli_cmd_delay, "Update DELAY section. Time (seconds), Feedback (0-1)" },
+    { "filter", cli_cmd_filter, "Update FILTER section. Frquency (Hz), Q" },
     { "logon", cli_cmd_logOn, "Enable global log" },
     { "logoff", cli_cmd_logOff, "Disable global log" },
     { "setloglvl", cli_cmd_setLogLvl, "Set new log level for defined interface. Interface [0-7], Level [0-3]" },
@@ -152,6 +154,51 @@ int cli_cmd_delay(int argc, char *argv[])
         else
         {
             shell_put_line("Wrong Feedback value!");
+        }
+    }
+
+    if ( iRetCode == SHELL_RET_OK )
+    {
+        shell_put_line(SHELL_STR_OK);
+    }
+    else
+    {
+        shell_put_line(SHELL_STR_ERR);
+    }
+
+    return iRetCode;
+}
+
+/**
+ * @brief Update parameters for filter section
+ * 
+ * @param argc Number of arguments, 3
+ * @param argv List of arguments, argv[0]: cmd name, argv[1] cutof frequency, argv[2] filter Q
+ * @return int Status:  0, OK, !0, ERROR
+ */
+int cli_cmd_filter(int argc, char *argv[])
+{
+    int iRetCode = SHELL_RET_OK;
+
+    if ( argc != 3U )
+    {
+        iRetCode = SHELL_RET_ERR;
+    }
+    else
+    {
+        /* Check interface */
+        float fFreqCutoff = (float)atof(argv[1U]);
+        float fQ = (float)atof(argv[2U]);
+
+        audio_cmd_t xAudioCmd = { 0U };
+
+        xAudioCmd.eCmdId = AUDIO_CMD_UPDATE_FILTER;
+        xAudioCmd.xCmdPayload.xUpdateFilter.fFreq = fFreqCutoff;
+        xAudioCmd.xCmdPayload.xUpdateFilter.fQ = fQ;
+
+        if (AUDIO_handle_cmd(xAudioCmd) != AUDIO_WAVE_OK)
+        {
+            iRetCode = SHELL_RET_ERR;
         }
     }
 
