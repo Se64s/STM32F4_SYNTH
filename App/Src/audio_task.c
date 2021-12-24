@@ -54,7 +54,14 @@ static void AudioTask_main(void *argument)
     sys_log_print(AUDIO_IF, AUDIO_LVL, "Init audio engine task");
 
     /* Setup all waves */
-    (void)AUDIO_voice_set_waveform(AUDIO_VOICE_NUM, AUDIO_WAVE_TRI);
+    {
+        audio_cmd_t xAudioCmd = { 0 };
+        xAudioCmd.eCmdId = AUDIO_CMD_SET_WAVEFORM;
+        xAudioCmd.xCmdPayload.xSetWave.eVoiceId = AUDIO_VOICE_NUM;
+        xAudioCmd.xCmdPayload.xSetWave.eWaveId = AUDIO_WAVE_TRI;
+
+        (void)AUDIO_handle_cmd(xAudioCmd);
+    }
 
     /* Infinite loop */
     for(;;)

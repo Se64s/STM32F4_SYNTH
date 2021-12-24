@@ -39,7 +39,7 @@ typedef void (*audio_hal_event_cb)(audio_hal_event_t event);
 #define AUDIO_TRANSFER_TRACE
 
 /* Disable codec isr while updating the buffer */
-#define AUDIO_DISABLE_ISR
+// #define AUDIO_DISABLE_ISR
 
 /* Exported macro ------------------------------------------------------------*/
 /* Exported functions prototypes ---------------------------------------------*/

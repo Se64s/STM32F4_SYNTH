@@ -202,14 +202,23 @@ void midi_serial_cb(sys_usart_event_t event)
  */
 void midi_voice_cb(uint8_t u8Voice, uint8_t u8Note, uint8_t u8Velocity, midi_voice_state_t eAction)
 {
+    audio_cmd_t xAudioCmd = { 0U };
+
     if ( eAction == VOICE_STATE_ON )
     {
-        AUDIO_voice_set_midi_note((audio_voice_id_t)u8Voice, u8Note, u8Velocity);
-        AUDIO_voice_set_state((audio_voice_id_t)u8Voice, true);
+        xAudioCmd.eCmdId = AUDIO_CMD_SET_MIDI_NOTE;
+        xAudioCmd.xCmdPayload.xSetMidiNote.eVoiceId = (audio_voice_id_t)u8Voice;
+        xAudioCmd.xCmdPayload.xSetMidiNote.u8Note = u8Note;
+        xAudioCmd.xCmdPayload.xSetMidiNote.u8Velocity = u8Velocity;
+        xAudioCmd.xCmdPayload.xSetMidiNote.bActive = true;
+        (void)AUDIO_handle_cmd(xAudioCmd);
     }
     else if ( eAction == VOICE_STATE_OFF )
     {
-        AUDIO_voice_set_state((audio_voice_id_t)u8Voice, false);
+        xAudioCmd.eCmdId = AUDIO_CMD_ACTIVATE_VOICE;
+        xAudioCmd.xCmdPayload.xActVoice.eVoiceId = (audio_voice_id_t)u8Voice;
+        xAudioCmd.xCmdPayload.xActVoice.bState = false;
+        (void)AUDIO_handle_cmd(xAudioCmd);
     }
 }
 

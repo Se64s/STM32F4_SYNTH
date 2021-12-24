@@ -40,8 +40,8 @@
 
 /* Delay buffer parameters */
 #define AUDIO_DELAY_BUFF_SIZE       ( 9600U ) // Max 0.2s delay
-#define AUDIO_DELAY_FEDDBACK        ( 0.9F )
-#define AUDIO_DELAY_TIME            ( 0.1F )
+#define AUDIO_DELAY_FEDDBACK        ( 0.8F )
+#define AUDIO_DELAY_TIME            ( 0.199F )
 
 /* Audio buffer critical positions for DMA transfer */
 #define AUDIO_BUFF_INIT_INDEX       ( 0U )
@@ -74,7 +74,7 @@ uint16_t u16AudioBuffer[AUDIO_BUFF_SIZE] = { 0U };
 AudioFilter2ndOrder_t xFilter2ndOrder = { 0U };
 
 /* Delay */
-float fDelayBuffer[AUDIO_DELAY_BUFF_SIZE];
+float fDelayBuffer[AUDIO_DELAY_BUFF_SIZE] = { 0.0F };
 AudioDelayCtrl_t xDelayCtrl = { 0U };
 
 /* Private function prototypes -----------------------------------------------*/
@@ -93,6 +93,62 @@ static void audio_hal_cb(audio_hal_event_t event);
  * @param u16StartIndex Start of the index where put new data.
  */
 static void audio_update_buffer(uint16_t *pu16Buffer, uint16_t u16StartIndex);
+
+/**
+ * @brief Update frquency of voice.
+ * 
+ * @param eVoice voice id to update.
+ * @param bState new state, true for enable outrput, folse for disable output.
+ * @return audio_ret_t operation result.
+ */
+static audio_ret_t audio_cmd_set_state(audio_voice_id_t eVoice, bool bState);
+
+/**
+ * @brief Update voice frequency.
+ * 
+ * @param eVoice voice id to update.
+ * @param fFreq new frequency to apply on voice.
+ * @return audio_ret_t operation result.
+ */
+audio_ret_t audio_cmd_set_freq(audio_voice_id_t eVoice, float fFreq);
+
+/**
+ * @brief Set voice frequency from midi note.
+ * 
+ * @param eVoice voice to update.
+ * @param u8MidiNote midi note.
+ * @param u8MidiVel midi velocity.
+ * @param bState channel output state.
+ * @return audio_ret_t operation result.
+ */
+audio_ret_t audio_cmd_set_midi_note(audio_voice_id_t eVoice, uint8_t u8MidiNote, uint8_t u8MidiVel, bool bActive);
+
+/**
+ * @brief Change current voice waveform.
+ * 
+ * @param eVoice voice id to update.
+ * @param eWaveId waveform id to apply.
+ * @return audio_ret_t operation result.
+ */
+audio_ret_t audio_cmd_set_waveform(audio_voice_id_t eVoice, audio_wave_id_t eWaveId);
+
+/**
+ * @brief Update parameters to delay effect
+ * 
+ * @param fTime time of delay.
+ * @param fFeedback feedback of delay.
+ * @return audio_ret_t operation result.
+ */
+audio_ret_t audio_cmd_update_delay(float fTime, float fFeedback);
+
+/**
+ * @brief Update parameters of filter section.
+ * 
+ * @param fFreq Cutoff frequency
+ * @param fQ Q param
+ * @return audio_ret_t operation result.
+ */
+audio_ret_t audio_cmd_update_filter(float fFreq, float fQ);
 
 /* Private function definition -----------------------------------------------*/
 
@@ -133,11 +189,11 @@ static void audio_update_buffer(uint16_t *pu16Buffer, uint16_t u16StartIndex)
             fData += AUDIO_WAVE_get_next_sample(&xVoiceList[u32Voice]);
         }
 
-        // Add delay action
-        fData = AUDIO_DELAY_process(&xDelayCtrl, fData);
-
         // Add filter action
         fData = AUDIO_FILTER_2nd_order_render(&xFilter2ndOrder, fData);
+
+        // Add delay action
+        fData = AUDIO_DELAY_process(&xDelayCtrl, fData);
 
         // Check DAC boundaries to prevent signal rollback
         int16_t i16DacData = (int16_t)fData;
@@ -157,6 +213,120 @@ static void audio_update_buffer(uint16_t *pu16Buffer, uint16_t u16StartIndex)
     }
 
     AUDIO_HAL_gpio_ctrl(false);
+}
+
+audio_ret_t audio_cmd_set_state(audio_voice_id_t eVoice, bool bState)
+{
+    ERR_ASSERT(eVoice <= AUDIO_VOICE_NUM);
+
+    AUDIO_HAL_isr_ctrl(false);
+
+    if (eVoice == AUDIO_VOICE_NUM)
+    {
+        for (uint32_t u32Voice = 0; u32Voice < (uint32_t)AUDIO_VOICE_NUM; u32Voice++)
+        {
+            AUDIO_WAVE_set_active(&xVoiceList[u32Voice], bState);
+        }
+    }
+    else
+    {
+        (void)AUDIO_WAVE_set_active(&xVoiceList[eVoice], bState);
+    }
+
+    AUDIO_HAL_isr_ctrl(true);
+
+    return AUDIO_WAVE_OK;
+}
+
+audio_ret_t audio_cmd_set_freq(audio_voice_id_t eVoice, float fFreq)
+{
+    ERR_ASSERT(eVoice <= AUDIO_VOICE_NUM);
+
+    AUDIO_HAL_isr_ctrl(false);
+
+    if (eVoice == AUDIO_VOICE_NUM)
+    {
+        for (uint32_t u32Voice = 0; u32Voice < (uint32_t)AUDIO_VOICE_NUM; u32Voice++)
+        {
+            (void)AUDIO_WAVE_update_freq(&xVoiceList[u32Voice], fFreq);
+        }
+    }
+    else
+    {
+        (void)AUDIO_WAVE_update_freq(&xVoiceList[eVoice], fFreq);
+    }
+
+    AUDIO_HAL_isr_ctrl(true);
+
+    return AUDIO_WAVE_OK;
+}
+
+audio_ret_t audio_cmd_set_midi_note(audio_voice_id_t eVoice, uint8_t u8MidiNote, uint8_t u8MidiVel, bool bActive)
+{
+    ERR_ASSERT(eVoice <= AUDIO_VOICE_NUM);
+    ERR_ASSERT(u8MidiNote <= MAX_MIDI_NOTE);
+    ERR_ASSERT(u8MidiVel <= MAX_MIDI_NOTE);
+
+    float fFreq = 440.0F * powf(2.0F, ((float)u8MidiNote - 69.0F) / 12.0F);
+    float fdB = AUDIO_TOOL_lin_map((int)u8MidiVel, 1.0F, 127.0F, MIN_AMP_DB_MAP, MAX_AMP_DB_MAP);
+    float fAmp = powf(10.0F, fdB / 20.0F);
+    // float fAmp = 1.0F;
+
+    AUDIO_HAL_isr_ctrl(false);
+
+    if (eVoice == AUDIO_VOICE_NUM)
+    {
+        for (uint32_t u32Voice = 0; u32Voice < (uint32_t)AUDIO_VOICE_NUM; u32Voice++)
+        {
+            (void)AUDIO_WAVE_update_freq(&xVoiceList[u32Voice], fFreq);
+            (void)AUDIO_WAVE_update_amp(&xVoiceList[u32Voice], fAmp);
+            (void)AUDIO_WAVE_set_active(&xVoiceList[u32Voice], bActive);
+        }
+    }
+    else
+    {
+        (void)AUDIO_WAVE_update_freq(&xVoiceList[eVoice], fFreq);
+        (void)AUDIO_WAVE_update_amp(&xVoiceList[eVoice], fAmp);
+        (void)AUDIO_WAVE_set_active(&xVoiceList[eVoice], bActive);
+    }
+
+    AUDIO_HAL_isr_ctrl(true);
+
+    return AUDIO_WAVE_OK;
+}
+
+audio_ret_t audio_cmd_set_waveform(audio_voice_id_t eVoice, audio_wave_id_t eWaveId)
+{
+    ERR_ASSERT(eVoice <= AUDIO_VOICE_NUM);
+    ERR_ASSERT(eWaveId < AUDIO_WAVE_NUM);
+
+    AUDIO_HAL_isr_ctrl(false);
+
+    if (eVoice == AUDIO_VOICE_NUM)
+    {
+        for (uint32_t u32Voice = 0; u32Voice < (uint32_t)AUDIO_VOICE_NUM; u32Voice++)
+        {
+            (void)AUDIO_WAVE_change_wave(&xVoiceList[u32Voice], eWaveId);
+        }
+    }
+    else
+    {
+        (void)AUDIO_WAVE_change_wave(&xVoiceList[eVoice], eWaveId);
+    }
+
+    AUDIO_HAL_isr_ctrl(true);
+
+    return AUDIO_WAVE_OK;
+}
+
+audio_ret_t audio_cmd_update_delay(float fTime, float fFeedback)
+{
+    return AUDIO_WAVE_ERR;
+}
+
+audio_ret_t audio_cmd_update_filter(float fFreq, float fQ)
+{
+    return AUDIO_WAVE_ERR;
 }
 
 /* Public function prototypes ------------------------------------------------*/
@@ -204,134 +374,75 @@ audio_ret_t AUDIO_deinit(void)
     return AUDIO_WAVE_OK;
 }
 
-audio_ret_t AUDIO_voice_set_state(audio_voice_id_t eVoice, bool bState)
+audio_ret_t AUDIO_handle_cmd(audio_cmd_t xAudioCmd)
 {
-    ERR_ASSERT(eVoice <= AUDIO_VOICE_NUM);
+    audio_ret_t eRetval = AUDIO_WAVE_ERR;
 
-    AUDIO_HAL_isr_ctrl(false);
-
-    if (eVoice == AUDIO_VOICE_NUM)
+    switch ( xAudioCmd.eCmdId )
     {
-        for (uint32_t u32Voice = 0; u32Voice < (uint32_t)AUDIO_VOICE_NUM; u32Voice++)
+        case AUDIO_CMD_ACTIVATE_VOICE:
         {
-            AUDIO_WAVE_set_active(&xVoiceList[u32Voice], bState);
+            eRetval = audio_cmd_set_state(
+                                            xAudioCmd.xCmdPayload.xActVoice.eVoiceId,
+                                            xAudioCmd.xCmdPayload.xActVoice.bState
+                                        );
         }
-    }
-    else
-    {
-        (void)AUDIO_WAVE_set_active(&xVoiceList[eVoice], bState);
-    }
+        break;
 
-    AUDIO_HAL_isr_ctrl(true);
-
-    return AUDIO_WAVE_OK;
-}
-
-audio_ret_t AUDIO_voice_set_freq(audio_voice_id_t eVoice, float fFreq)
-{
-    ERR_ASSERT(eVoice <= AUDIO_VOICE_NUM);
-
-    AUDIO_HAL_isr_ctrl(false);
-
-    if (eVoice == AUDIO_VOICE_NUM)
-    {
-        for (uint32_t u32Voice = 0; u32Voice < (uint32_t)AUDIO_VOICE_NUM; u32Voice++)
+        case AUDIO_CMD_SET_FREQ:
         {
-            (void)AUDIO_WAVE_update_freq(&xVoiceList[u32Voice], fFreq);
+            eRetval = audio_cmd_set_freq(
+                                            xAudioCmd.xCmdPayload.xSetFreq.eVoiceId,
+                                            xAudioCmd.xCmdPayload.xSetFreq.fFreq
+                                        );
         }
-    }
-    else
-    {
-        (void)AUDIO_WAVE_update_freq(&xVoiceList[eVoice], fFreq);
-    }
+        break;
 
-    AUDIO_HAL_isr_ctrl(true);
-
-    return AUDIO_WAVE_OK;
-}
-
-audio_ret_t AUDIO_voice_set_midi_note(audio_voice_id_t eVoice, uint8_t u8MidiNote, uint8_t u8MidiVel)
-{
-    ERR_ASSERT(eVoice <= AUDIO_VOICE_NUM);
-    ERR_ASSERT(u8MidiNote <= MAX_MIDI_NOTE);
-    ERR_ASSERT(u8MidiVel <= MAX_MIDI_NOTE);
-
-    AUDIO_HAL_isr_ctrl(false);
-
-    float fFreq = 440.0F * powf(2.0F, ((float)u8MidiNote - 69.0F) / 12.0F);
-    float fdB = AUDIO_TOOL_lin_map((int)u8MidiVel, 1.0F, 127.0F, MIN_AMP_DB_MAP, MAX_AMP_DB_MAP);
-    float fAmp = powf(10.0F, fdB / 20.0F);
-    // float fAmp = 1.0F;
-
-    if (eVoice == AUDIO_VOICE_NUM)
-    {
-        for (uint32_t u32Voice = 0; u32Voice < (uint32_t)AUDIO_VOICE_NUM; u32Voice++)
+        case AUDIO_CMD_SET_MIDI_NOTE:
         {
-            (void)AUDIO_WAVE_update_freq(&xVoiceList[u32Voice], fFreq);
-            (void)AUDIO_WAVE_update_amp(&xVoiceList[u32Voice], fAmp);
+            eRetval = audio_cmd_set_midi_note(
+                                                xAudioCmd.xCmdPayload.xSetMidiNote.eVoiceId,
+                                                xAudioCmd.xCmdPayload.xSetMidiNote.u8Note,
+                                                xAudioCmd.xCmdPayload.xSetMidiNote.u8Velocity,
+                                                xAudioCmd.xCmdPayload.xSetMidiNote.bActive
+                                            );
         }
-    }
-    else
-    {
-        (void)AUDIO_WAVE_update_freq(&xVoiceList[eVoice], fFreq);
-        (void)AUDIO_WAVE_update_amp(&xVoiceList[eVoice], fAmp);
-    }
+        break;
 
-    AUDIO_HAL_isr_ctrl(true);
-
-    return AUDIO_WAVE_OK;
-}
-
-audio_ret_t AUDIO_voice_set_waveform(audio_voice_id_t eVoice, audio_wave_id_t eWaveId)
-{
-    ERR_ASSERT(eVoice <= AUDIO_VOICE_NUM);
-    ERR_ASSERT(eWaveId < AUDIO_WAVE_NUM);
-
-    AUDIO_HAL_isr_ctrl(false);
-
-    if (eVoice == AUDIO_VOICE_NUM)
-    {
-        for (uint32_t u32Voice = 0; u32Voice < (uint32_t)AUDIO_VOICE_NUM; u32Voice++)
+        case AUDIO_CMD_SET_WAVEFORM:
         {
-            (void)AUDIO_WAVE_change_wave(&xVoiceList[u32Voice], eWaveId);
+            eRetval = audio_cmd_set_waveform(
+                                                xAudioCmd.xCmdPayload.xSetWave.eVoiceId,
+                                                xAudioCmd.xCmdPayload.xSetWave.eWaveId
+                                            );
         }
-    }
-    else
-    {
-        (void)AUDIO_WAVE_change_wave(&xVoiceList[eVoice], eWaveId);
-    }
+        break;
 
-    AUDIO_HAL_isr_ctrl(true);
-
-    return AUDIO_WAVE_OK;
-}
-
-audio_ret_t AUDIO_voice_update(audio_voice_id_t eVoice, audio_wave_id_t eWaveId, float fFreq, bool bState)
-{
-    ERR_ASSERT(eVoice <= AUDIO_VOICE_NUM);
-    ERR_ASSERT(eWaveId < AUDIO_WAVE_NUM);
-
-    AUDIO_HAL_isr_ctrl(false);
-
-    if (eVoice == AUDIO_VOICE_NUM)
-    {
-        for (uint32_t u32Voice = 0; u32Voice < (uint32_t)AUDIO_VOICE_NUM; u32Voice++)
+        case AUDIO_CMD_UPDATE_FILTER:
         {
-            (void)AUDIO_WAVE_update_freq(&xVoiceList[u32Voice], fFreq);
-            (void)AUDIO_WAVE_change_wave(&xVoiceList[u32Voice], eWaveId);
-            (void)AUDIO_WAVE_set_active(&xVoiceList[u32Voice], bState);
+            eRetval = audio_cmd_update_filter(
+                                                xAudioCmd.xCmdPayload.xUpdateFilter.fFreq,
+                                                xAudioCmd.xCmdPayload.xUpdateFilter.fQ
+                                            );
         }
-    }
-    else
-    {
-        (void)AUDIO_WAVE_update_freq(&xVoiceList[eVoice], fFreq);
-        (void)AUDIO_WAVE_change_wave(&xVoiceList[eVoice], eWaveId);
-        (void)AUDIO_WAVE_set_active(&xVoiceList[eVoice], bState);
+        break;
+
+        case AUDIO_CMD_UPDATE_DELAY:
+        {
+            eRetval = audio_cmd_update_delay(
+                                                xAudioCmd.xCmdPayload.xUpdateDelay.fTime,
+                                                xAudioCmd.xCmdPayload.xUpdateDelay.fFeedback
+                                            );
+        }
+        break;
+
+        default:
+            // Not valid CMD
+            eRetval = AUDIO_WAVE_PARAM_ERROR;
+        break;
     }
 
-    AUDIO_HAL_isr_ctrl(true);
-
-    return AUDIO_WAVE_OK;
+    return eRetval;
 }
 
 /* EOF */
