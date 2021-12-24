@@ -321,12 +321,20 @@ audio_ret_t audio_cmd_set_waveform(audio_voice_id_t eVoice, audio_wave_id_t eWav
 
 audio_ret_t audio_cmd_update_delay(float fTime, float fFeedback)
 {
-    return AUDIO_WAVE_ERR;
+    audio_ret_t eRetval = AUDIO_WAVE_ERR;
+
+    if ( AUDIO_DELAY_update_delay(&xDelayCtrl, fTime) == AUDIO_WAVE_OK )
+    {
+        eRetval = AUDIO_DELAY_update_feedback(&xDelayCtrl, fFeedback);
+    }
+
+    return eRetval;
 }
 
 audio_ret_t audio_cmd_update_filter(float fFreq, float fQ)
 {
-    return AUDIO_WAVE_ERR;
+    AUDIO_FILTER_compute_coefficients_LP_RES(&xFilter2ndOrder, AUDIO_SAMPLE_RATE, fFreq, fQ);
+    return AUDIO_WAVE_OK;
 }
 
 /* Public function prototypes ------------------------------------------------*/
