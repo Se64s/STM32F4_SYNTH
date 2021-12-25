@@ -56,7 +56,7 @@ audio_ret_t AUDIO_WAVE_init_voice(AudioWaveTableVoice_t *pVoice, uint32_t u32Sam
     pVoice->eWaveId = WAVE_DEFAULT_WAVE;
     pVoice->pu32WaveTable = wave_list[pVoice->eWaveId];
 
-    return AUDIO_WAVE_OK;
+    return AUDIO_OK;
 }
 
 audio_ret_t AUDIO_WAVE_change_wave(AudioWaveTableVoice_t *pVoice, audio_wave_id_t eWave)
@@ -67,7 +67,7 @@ audio_ret_t AUDIO_WAVE_change_wave(AudioWaveTableVoice_t *pVoice, audio_wave_id_
     pVoice->eWaveId = eWave;
     pVoice->pu32WaveTable = wave_list[eWave];
 
-    return AUDIO_WAVE_OK;
+    return AUDIO_OK;
 }
 
 audio_ret_t AUDIO_WAVE_update_freq(AudioWaveTableVoice_t *pVoice, float fFreq)
@@ -76,7 +76,7 @@ audio_ret_t AUDIO_WAVE_update_freq(AudioWaveTableVoice_t *pVoice, float fFreq)
 
     pVoice->fFreq = fFreq;
 
-    return AUDIO_WAVE_OK;
+    return AUDIO_OK;
 }
 
 audio_ret_t AUDIO_WAVE_update_amp(AudioWaveTableVoice_t *pVoice, float fAmp)
@@ -87,7 +87,7 @@ audio_ret_t AUDIO_WAVE_update_amp(AudioWaveTableVoice_t *pVoice, float fAmp)
 
     pVoice->fAmplitude = fAmp * pVoice->fMaxAmplitude;
 
-    return AUDIO_WAVE_OK;
+    return AUDIO_OK;
 }
 
 audio_ret_t AUDIO_WAVE_set_active(AudioWaveTableVoice_t *pVoice, bool bState)
@@ -101,7 +101,7 @@ audio_ret_t AUDIO_WAVE_set_active(AudioWaveTableVoice_t *pVoice, bool bState)
         pVoice->fCurrentSample = 0.0F;
     }
 
-    return AUDIO_WAVE_OK;
+    return AUDIO_OK;
 }
 
 float AUDIO_WAVE_get_next_sample(AudioWaveTableVoice_t *pVoice)

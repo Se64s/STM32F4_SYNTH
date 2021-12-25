@@ -29,9 +29,9 @@ extern "C" {
 
 /** Audio lib return codes */
 typedef enum {
-    AUDIO_WAVE_OK           = 0U,
-    AUDIO_WAVE_ERR          = 1U,
-    AUDIO_WAVE_PARAM_ERROR  = 2U,
+    AUDIO_OK           = 0U,
+    AUDIO_ERR          = 1U,
+    AUDIO_PARAM_ERROR  = 2U,
 } audio_ret_t;
 
 /** Audio wave table ids */

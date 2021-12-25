@@ -26,7 +26,7 @@ audio_ret_t AUDIO_DELAY_init(AudioDelayCtrl_t *pxDelayCtrl, uint32_t u32SampleRa
     ERR_ASSERT( pxDelayCtrl != NULL );
     ERR_ASSERT( pfData != NULL );
 
-    audio_ret_t eRetVal = AUDIO_WAVE_PARAM_ERROR;
+    audio_ret_t eRetVal = AUDIO_PARAM_ERROR;
 
     if ( (u32SampleRate != 0U) && (u32BufferSize > 0U) && (pxDelayCtrl != NULL) && (pfData != NULL) )
     {
@@ -38,7 +38,7 @@ audio_ret_t AUDIO_DELAY_init(AudioDelayCtrl_t *pxDelayCtrl, uint32_t u32SampleRa
         pxDelayCtrl->u32ReadPos = 0U;
         pxDelayCtrl->fFeedback = 0.0F;
 
-        eRetVal = AUDIO_WAVE_OK;
+        eRetVal = AUDIO_OK;
     }
 
     return eRetVal;
@@ -48,7 +48,7 @@ audio_ret_t AUDIO_DELAY_update_delay(AudioDelayCtrl_t *pxDelayCtrl, float fDelay
 {
     ERR_ASSERT( pxDelayCtrl != NULL );
 
-    audio_ret_t eRetVal = AUDIO_WAVE_PARAM_ERROR;
+    audio_ret_t eRetVal = AUDIO_PARAM_ERROR;
 
     float fMaxDelay = (float)pxDelayCtrl->u32BufferSize / (float)pxDelayCtrl->u32SampleRate;
 
@@ -58,7 +58,7 @@ audio_ret_t AUDIO_DELAY_update_delay(AudioDelayCtrl_t *pxDelayCtrl, float fDelay
 
         pxDelayCtrl->u32ReadPos = ((pxDelayCtrl->u32WritePos + pxDelayCtrl->u32BufferSize) - (uint32_t)fDelayNumSamples) % pxDelayCtrl->u32BufferSize;
 
-        eRetVal = AUDIO_WAVE_OK;
+        eRetVal = AUDIO_OK;
     }
 
     return eRetVal;
@@ -68,12 +68,12 @@ audio_ret_t AUDIO_DELAY_update_feedback(AudioDelayCtrl_t *pxDelayCtrl, float fFe
 {
     ERR_ASSERT( pxDelayCtrl != NULL );
 
-    audio_ret_t eRetVal = AUDIO_WAVE_PARAM_ERROR;
+    audio_ret_t eRetVal = AUDIO_PARAM_ERROR;
 
     if ( (fFeedback >= 0.0F) && (fFeedback < 1.0F) )
     {
         pxDelayCtrl->fFeedback = fFeedback;
-        eRetVal = AUDIO_WAVE_OK;
+        eRetVal = AUDIO_OK;
     }
 
     return eRetVal;

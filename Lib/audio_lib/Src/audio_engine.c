@@ -57,10 +57,6 @@
 #define MAX_AMP_DB_MAP              ( 0.0F )
 #define MIN_AMP_DB_MAP              ( -40.0F )
 
-/* Filter default values */
-#define FILTER_LP_RES_FREQ          ( 50000.0F )
-#define FILTER_LP_RES_Q             ( 1.0F )
-
 /* Private macro -------------------------------------------------------------*/
 /* Private variables ---------------------------------------------------------*/
 
@@ -71,7 +67,7 @@ AudioWaveTableVoice_t xVoiceList[AUDIO_VOICE_NUM];
 uint16_t u16AudioBuffer[AUDIO_BUFF_SIZE] = { 0U };
 
 /* Filter */
-AudioFilter2ndOrder_t xFilter2ndOrder = { 0U };
+AudioFilterLP_t xFilterLP = { 0U };
 
 /* Delay */
 float fDelayBuffer[AUDIO_DELAY_BUFF_SIZE] = { 0.0F };
@@ -190,7 +186,7 @@ static void audio_update_buffer(uint16_t *pu16Buffer, uint16_t u16StartIndex)
         }
 
         // Add filter action
-        fData = AUDIO_FILTER_2nd_order_render(&xFilter2ndOrder, fData);
+        fData = AUDIO_FILTER_LP_process(&xFilterLP, fData);
 
         // Add delay action
         fData = AUDIO_DELAY_process(&xDelayCtrl, fData);
@@ -235,7 +231,7 @@ audio_ret_t audio_cmd_set_state(audio_voice_id_t eVoice, bool bState)
 
     AUDIO_HAL_isr_ctrl(true);
 
-    return AUDIO_WAVE_OK;
+    return AUDIO_OK;
 }
 
 audio_ret_t audio_cmd_set_freq(audio_voice_id_t eVoice, float fFreq)
@@ -258,7 +254,7 @@ audio_ret_t audio_cmd_set_freq(audio_voice_id_t eVoice, float fFreq)
 
     AUDIO_HAL_isr_ctrl(true);
 
-    return AUDIO_WAVE_OK;
+    return AUDIO_OK;
 }
 
 audio_ret_t audio_cmd_set_midi_note(audio_voice_id_t eVoice, uint8_t u8MidiNote, uint8_t u8MidiVel, bool bActive)
@@ -292,7 +288,7 @@ audio_ret_t audio_cmd_set_midi_note(audio_voice_id_t eVoice, uint8_t u8MidiNote,
 
     AUDIO_HAL_isr_ctrl(true);
 
-    return AUDIO_WAVE_OK;
+    return AUDIO_OK;
 }
 
 audio_ret_t audio_cmd_set_waveform(audio_voice_id_t eVoice, audio_wave_id_t eWaveId)
@@ -316,14 +312,14 @@ audio_ret_t audio_cmd_set_waveform(audio_voice_id_t eVoice, audio_wave_id_t eWav
 
     AUDIO_HAL_isr_ctrl(true);
 
-    return AUDIO_WAVE_OK;
+    return AUDIO_OK;
 }
 
 audio_ret_t audio_cmd_update_delay(float fTime, float fFeedback)
 {
-    audio_ret_t eRetval = AUDIO_WAVE_ERR;
+    audio_ret_t eRetval = AUDIO_ERR;
 
-    if ( AUDIO_DELAY_update_delay(&xDelayCtrl, fTime) == AUDIO_WAVE_OK )
+    if ( AUDIO_DELAY_update_delay(&xDelayCtrl, fTime) == AUDIO_OK )
     {
         eRetval = AUDIO_DELAY_update_feedback(&xDelayCtrl, fFeedback);
     }
@@ -333,18 +329,24 @@ audio_ret_t audio_cmd_update_delay(float fTime, float fFeedback)
 
 audio_ret_t audio_cmd_update_filter(float fFreq, float fQ)
 {
-    AUDIO_FILTER_compute_coefficients_LP_RES(&xFilter2ndOrder, AUDIO_SAMPLE_RATE, fFreq, fQ);
-    return AUDIO_WAVE_OK;
+    audio_ret_t eRetval = AUDIO_FILTER_LP_set_frequency(&xFilterLP, fFreq);
+
+    if ( eRetval == AUDIO_OK )
+    {
+        eRetval = AUDIO_FILTER_LP_set_q(&xFilterLP, fQ);
+    }
+
+    return AUDIO_OK;
 }
 
 /* Public function prototypes ------------------------------------------------*/
 
 audio_ret_t AUDIO_init(void)
 {
-    audio_ret_t eRetval = AUDIO_WAVE_ERR;
+    audio_ret_t eRetval = AUDIO_ERR;
 
     /* Init filter section */
-    AUDIO_FILTER_compute_coefficients_LP_RES(&xFilter2ndOrder, AUDIO_SAMPLE_RATE, FILTER_LP_RES_FREQ, FILTER_LP_RES_Q);
+    AUDIO_FILTER_LP_init(&xFilterLP);
 
     /* Init delay section */
     AUDIO_DELAY_init(&xDelayCtrl, AUDIO_SAMPLE_RATE, fDelayBuffer, AUDIO_DELAY_BUFF_SIZE);
@@ -355,12 +357,12 @@ audio_ret_t AUDIO_init(void)
         AUDIO_WAVE_init_voice(&xVoiceList[u32Voice], AUDIO_SAMPLE_RATE, AUDIO_AMPLITUDE);
     }
 
-    if ( AUDIO_HAL_init(audio_hal_cb) == AUDIO_WAVE_OK )
+    if ( AUDIO_HAL_init(audio_hal_cb) == AUDIO_OK )
     {
         /* Start transfer */
-        if ( AUDIO_HAL_send_buffer(u16AudioBuffer, AUDIO_TRANSFER_SIZE) == AUDIO_WAVE_OK )
+        if ( AUDIO_HAL_send_buffer(u16AudioBuffer, AUDIO_TRANSFER_SIZE) == AUDIO_OK )
         {
-            eRetval = AUDIO_WAVE_OK;
+            eRetval = AUDIO_OK;
         }
     }
 
@@ -377,12 +379,12 @@ audio_ret_t AUDIO_deinit(void)
 
     AUDIO_HAL_deinit();
 
-    return AUDIO_WAVE_OK;
+    return AUDIO_OK;
 }
 
 audio_ret_t AUDIO_handle_cmd(audio_cmd_t xAudioCmd)
 {
-    audio_ret_t eRetval = AUDIO_WAVE_ERR;
+    audio_ret_t eRetval = AUDIO_ERR;
 
     switch ( xAudioCmd.eCmdId )
     {
@@ -444,7 +446,7 @@ audio_ret_t AUDIO_handle_cmd(audio_cmd_t xAudioCmd)
 
         default:
             // Not valid CMD
-            eRetval = AUDIO_WAVE_PARAM_ERROR;
+            eRetval = AUDIO_PARAM_ERROR;
         break;
     }
 

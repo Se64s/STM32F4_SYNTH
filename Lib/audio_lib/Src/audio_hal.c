@@ -64,7 +64,7 @@ audio_ret_t AUDIO_HAL_init(audio_hal_event_cb pEventCB)
 {
     ERR_ASSERT(pEventCB != NULL);
 
-    audio_ret_t eRetVal = AUDIO_WAVE_ERR;
+    audio_ret_t eRetVal = AUDIO_ERR;
 
     pEventCallBack = pEventCB;
 
@@ -74,7 +74,7 @@ audio_ret_t AUDIO_HAL_init(audio_hal_event_cb pEventCB)
 #endif // AUDIO_TRANSFER_TRACE
     )
     {
-        eRetVal = AUDIO_WAVE_OK;
+        eRetVal = AUDIO_OK;
     }
 
     return eRetVal;
@@ -92,12 +92,12 @@ audio_ret_t AUDIO_HAL_send_buffer(uint16_t *pu16Data, uint16_t u16DataLen)
     ERR_ASSERT(pu16Data != NULL);
     ERR_ASSERT(u16DataLen != 0U);
 
-    audio_ret_t eRetVal = AUDIO_WAVE_ERR;
+    audio_ret_t eRetVal = AUDIO_ERR;
 
     /* Start transfer */
     if ( sys_i2s_send(AUDIO_I2S, pu16Data, u16DataLen) == SYS_SUCCESS )
     {
-        eRetVal = AUDIO_WAVE_OK;
+        eRetVal = AUDIO_OK;
     }
 
     return eRetVal;

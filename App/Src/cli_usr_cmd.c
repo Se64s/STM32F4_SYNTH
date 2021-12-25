@@ -146,7 +146,7 @@ int cli_cmd_delay(int argc, char *argv[])
             xAudioCmd.xCmdPayload.xUpdateDelay.fTime = fTime;
             xAudioCmd.xCmdPayload.xUpdateDelay.fFeedback = fFeedback;
 
-            if (AUDIO_handle_cmd(xAudioCmd) != AUDIO_WAVE_OK)
+            if (AUDIO_handle_cmd(xAudioCmd) != AUDIO_OK)
             {
                 iRetCode = SHELL_RET_ERR;
             }
@@ -196,7 +196,7 @@ int cli_cmd_filter(int argc, char *argv[])
         xAudioCmd.xCmdPayload.xUpdateFilter.fFreq = fFreqCutoff;
         xAudioCmd.xCmdPayload.xUpdateFilter.fQ = fQ;
 
-        if (AUDIO_handle_cmd(xAudioCmd) != AUDIO_WAVE_OK)
+        if (AUDIO_handle_cmd(xAudioCmd) != AUDIO_OK)
         {
             iRetCode = SHELL_RET_ERR;
         }
