@@ -42,6 +42,8 @@ int cli_cmd_assert(int argc, char *argv[]);
 int cli_cmd_logOn(int argc, char *argv[]);
 int cli_cmd_logOff(int argc, char *argv[]);
 int cli_cmd_setLogLvl(int argc, char *argv[]);
+int cli_cmd_wave(int argc, char *argv[]);
+int cli_cmd_midi(int argc, char *argv[]);
 int cli_cmd_delay(int argc, char *argv[]);
 int cli_cmd_filter(int argc, char *argv[]);
 
@@ -49,6 +51,8 @@ int cli_cmd_filter(int argc, char *argv[]);
 
 /* List of commands implemented */
 static const sShellCommand s_shell_commands[] = {
+    { "wave", cli_cmd_wave, "Select output waveform. WaveId [0-4]" },
+    { "midi", cli_cmd_midi, "Activate midi note. Voice [0-5], Note [0-126], State [0-1]" },
     { "delay", cli_cmd_delay, "Update DELAY section. Time (seconds), Feedback (0-1)" },
     { "filter", cli_cmd_filter, "Update FILTER section. Frquency (Hz), Q" },
     { "logon", cli_cmd_logOn, "Enable global log" },
@@ -112,6 +116,114 @@ int cli_cmd_assert(int argc, char *argv[])
     {
         shell_put_line(SHELL_STR_OK);
         ERR_ASSERT(0U);
+    }
+
+    return iRetCode;
+}
+
+/**
+ * @brief Select output waveform.
+ * 
+ * @param argc number of arguments, 2.
+ * @param argv List of arguments, argv[0]: cmd name, argv[1] wave_id.
+ * @return int Status:  0, OK, !0, ERROR.
+ */
+int cli_cmd_wave(int argc, char *argv[])
+{
+    int iRetCode = SHELL_RET_OK;
+
+    if ( argc != 2U )
+    {
+        iRetCode = SHELL_RET_ERR;
+    }
+    else
+    {
+        /* Check interface */
+        uint32_t u32WaveId = (uint32_t)atoi(argv[1U]);
+
+        if ( u32WaveId < (uint32_t)AUDIO_WAVE_NUM )
+        {
+            audio_cmd_t xAudioCmd = { 0U };
+
+            xAudioCmd.eCmdId = AUDIO_CMD_SET_WAVEFORM;
+            xAudioCmd.xCmdPayload.xSetWave.eVoiceId = AUDIO_VOICE_NUM;
+            xAudioCmd.xCmdPayload.xSetWave.eWaveId = u32WaveId;
+
+            if (AUDIO_handle_cmd(xAudioCmd) != AUDIO_OK)
+            {
+                iRetCode = SHELL_RET_ERR;
+            }
+        }
+        else
+        {
+            shell_put_line("Wrong wave id value!");
+            iRetCode = SHELL_RET_ERR;
+        }
+    }
+
+    if ( iRetCode == SHELL_RET_OK )
+    {
+        shell_put_line(SHELL_STR_OK);
+    }
+    else
+    {
+        shell_put_line(SHELL_STR_ERR);
+    }
+
+    return iRetCode;
+}
+
+/**
+ * @brief Simulate midi note activation.
+ * 
+ * @param argc number of arguments, 4.
+ * @param argv List of arguments, argv[0]: cmd name, argv[1] voice_id, argv[2] vmidi note, argv[3] voice_state.
+ * @return int Status:  0, OK, !0, ERROR.
+ */
+int cli_cmd_midi(int argc, char *argv[])
+{
+    int iRetCode = SHELL_RET_OK;
+
+    if ( argc != 4U )
+    {
+        iRetCode = SHELL_RET_ERR;
+    }
+    else
+    {
+        /* Check interface */
+        uint8_t u8Voice = (uint8_t)atoi(argv[1U]);
+        uint8_t u8Note = (uint8_t)atoi(argv[2U]);
+        uint8_t u8State = (uint8_t)atoi(argv[3U]);
+
+        if ( (u8Voice < AUDIO_VOICE_NUM) && (u8Note < 127U) && (u8State <= 1U) )
+        {
+            audio_cmd_t xAudioCmd = { 0U };
+
+            xAudioCmd.eCmdId = AUDIO_CMD_SET_MIDI_NOTE;
+            xAudioCmd.xCmdPayload.xSetMidiNote.eVoiceId = u8Voice;
+            xAudioCmd.xCmdPayload.xSetMidiNote.u8Note = u8Note;
+            xAudioCmd.xCmdPayload.xSetMidiNote.u8Velocity = 120U;
+            xAudioCmd.xCmdPayload.xSetMidiNote.bActive = (bool)u8State;
+
+            if (AUDIO_handle_cmd(xAudioCmd) != AUDIO_OK)
+            {
+                iRetCode = SHELL_RET_ERR;
+            }
+        }
+        else
+        {
+            shell_put_line("Wrong midi params!");
+            iRetCode = SHELL_RET_ERR;
+        }
+    }
+
+    if ( iRetCode == SHELL_RET_OK )
+    {
+        shell_put_line(SHELL_STR_OK);
+    }
+    else
+    {
+        shell_put_line(SHELL_STR_ERR);
     }
 
     return iRetCode;
