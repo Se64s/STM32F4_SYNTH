@@ -192,7 +192,10 @@ void USART2_IRQHandler(void)
     {
         __HAL_UART_CLEAR_IDLEFLAG(&huart2);
 
-        /* Abort current reception and pass control to driver callback */
+        /* Handle IDLE evetn as Rx event */
+        HAL_UART_RxCpltCallback(&huart2);
+
+        /* Clear reception and pass event to driver */
         HAL_UART_Abort_IT(&huart2);
     }
 }

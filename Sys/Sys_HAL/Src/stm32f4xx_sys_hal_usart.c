@@ -411,7 +411,7 @@ uint16_t sys_usart_get_read_count(sys_usart_id_t eId)
 
     if ( eId == SYS_USART_0)
     {
-        u16RedData = usart_handler_list[eId]->handler->RxXferCount;
+        u16RedData = usart_handler_list[eId]->handler->RxXferSize - usart_handler_list[eId]->handler->RxXferCount;
     }
     else if ( eId == SYS_USART_1)
     {

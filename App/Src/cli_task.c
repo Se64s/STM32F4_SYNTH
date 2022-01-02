@@ -21,6 +21,8 @@
 
 #include "shell.h"
 
+#include "circular_buffer.h"
+
 /* Private includes ----------------------------------------------------------*/
 /* Private typedef -----------------------------------------------------------*/
 /* Private define ------------------------------------------------------------*/
@@ -40,6 +42,10 @@
 /* Serial interface use for CLI */
 #define CLI_USART       ( SYS_USART_0 )
 
+/* Buffer parameters */
+#define SER_BUFF_SIZE   ( 32U )
+#define SER_CBUFF_SIZE  ( 128U )
+
 /* Private macro -------------------------------------------------------------*/
 /* Private variables ---------------------------------------------------------*/
 
@@ -53,6 +59,11 @@ const osThreadAttr_t CliTask_attributes = {
 
 /* Event flags */
 osEventFlagsId_t evt_id;
+
+/* Serial reception buffers */
+uint8_t pu8SerialBuffData[SER_BUFF_SIZE];
+uint8_t pu8CbuffData[SER_CBUFF_SIZE];
+circular_buf_t xCliCBuff = { 0U };
 
 /* Private function prototypes -----------------------------------------------*/
 
@@ -72,21 +83,44 @@ void cli_serial_cb(sys_usart_event_t event)
     switch (event)
     {
         case SYS_USART_EVENT_RX_IDLE:
-            osEventFlagsSet(evt_id, EVT_RX_IDLE);
+            /* Reload reception */
+            sys_usart_read(CLI_USART, pu8SerialBuffData, SER_BUFF_SIZE);
+            break;
+
+        case SYS_USART_EVENT_RX_DONE:
+            {
+                /* Get data from serial buff */
+                uint16_t u16RxCount = sys_usart_get_read_count(CLI_USART);
+                for (uint16_t i = 0U; i < u16RxCount; i++)
+                {
+                    circular_buf_put2(&xCliCBuff, pu8SerialBuffData[i]);
+                }
+                /* Set data available flag */
+                osEventFlagsSet(evt_id, EVT_RX_DATA);
+            }
+            break;
+
+        case SYS_USART_EVENT_RX_BUFF_FULL:
+            {
+                /* Get data from serial buff */
+                for (uint16_t i = 0U; i < SER_BUFF_SIZE; i++)
+                {
+                    circular_buf_put2(&xCliCBuff, pu8SerialBuffData[i]);
+                }
+                /* Enable reception */
+                sys_usart_read(CLI_USART, pu8SerialBuffData, SER_BUFF_SIZE);
+                /* Set data available flag */
+                osEventFlagsSet(evt_id, EVT_RX_DATA);
+            }
             break;
 
         case SYS_USART_EVENT_TX_DONE:
             osEventFlagsSet(evt_id, EVT_TX_DONE);
             break;
 
-        case SYS_USART_EVENT_RX_DONE:
-            osEventFlagsSet(evt_id, EVT_RX_DATA);
-            break;
-
-        case SYS_USART_EVENT_RX_BUFF_FULL:
-            break;
-
         case SYS_USART_EVENT_ERROR:
+            /* Enable reception */
+            sys_usart_read(CLI_USART, pu8SerialBuffData, SER_BUFF_SIZE);
             osEventFlagsSet(evt_id, EVT_COM_ERR);
             break;
 
@@ -140,14 +174,17 @@ static void CliTask_main(void *argument)
     /* Infinite loop */
     for(;;)
     {
-        uint32_t u32Flags = osEventFlagsWait(evt_id, EVT_RX_DATA | EVT_COM_ERR | EVT_RX_IDLE, osFlagsWaitAny, osWaitForever);
+        uint32_t u32Flags = osEventFlagsWait(evt_id, EVT_RX_DATA, osFlagsWaitAny, osWaitForever);
 
-        if ( (u32Flags & EVT_RX_DATA) == EVT_RX_DATA )
+        if ( SYS_CHECK_EVT(u32Flags, EVT_RX_DATA) )
         {
-            shell_receive_char(u8RxData);
-        }
+            uint8_t u8RxData = 0U;
 
-        (void)sys_usart_read(CLI_USART, &u8RxData, 1U);
+            while ( circular_buf_get(&xCliCBuff, &u8RxData) == 0U )
+            {
+                shell_receive_char(u8RxData);
+            }
+        }
     }
 }
 
@@ -167,6 +204,8 @@ void CliTask_Init(void)
     ERR_ASSERT(evt_id != NULL);
 
     ERR_ASSERT(sys_usart_init(CLI_USART, cli_serial_cb) == SYS_SUCCESS);
+
+    circular_buf_init(&xCliCBuff, pu8CbuffData, SER_CBUFF_SIZE);
 }
 
 /* EOF */
