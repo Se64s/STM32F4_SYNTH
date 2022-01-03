@@ -16,6 +16,7 @@
 #include "audio_wavetable.h"
 #include "audio_filter.h"
 #include "audio_delay.h"
+#include "audio_env_adsr.h"
 
 #include "arm_math.h"
 
@@ -62,6 +63,9 @@
 
 /* System voice list */
 AudioWaveTableVoice_t xVoiceList[AUDIO_VOICE_NUM];
+
+/* Voice envelopes */
+env_adsr_ctrl_t xAdsrEnvList[AUDIO_VOICE_NUM];
 
 /* Audio buffer */
 uint16_t u16AudioBuffer[AUDIO_BUFF_SIZE] = { 0U };
@@ -181,8 +185,18 @@ static void audio_update_buffer(uint16_t *pu16Buffer, uint16_t u16StartIndex)
         // Agregate data from all voices
         for (uint32_t u32Voice = 0; u32Voice < (uint32_t)AUDIO_VOICE_NUM; u32Voice++)
         {
+            // Get envelope data
+            float fAdsrData = ADSR_process(&xAdsrEnvList[u32Voice]);
+            // Get voice data 
+            float fVoiceData = AUDIO_WAVE_get_next_sample(&xVoiceList[u32Voice]);
             // Agregate all voice data
-            fData += AUDIO_WAVE_get_next_sample(&xVoiceList[u32Voice]);
+            fData += fAdsrData * fVoiceData;
+
+            // Handle voice deactivation
+            if ( xVoiceList[u32Voice].bActive && !ADSR_is_active(&xAdsrEnvList[u32Voice]) )
+            {
+                AUDIO_WAVE_set_active(&xVoiceList[u32Voice], false);
+            }
         }
 
         // Add filter action
@@ -221,12 +235,30 @@ audio_ret_t audio_cmd_set_state(audio_voice_id_t eVoice, bool bState)
     {
         for (uint32_t u32Voice = 0; u32Voice < (uint32_t)AUDIO_VOICE_NUM; u32Voice++)
         {
-            AUDIO_WAVE_set_active(&xVoiceList[u32Voice], bState);
+            /* Handle ADSR section */
+            if ( bState )
+            {
+                AUDIO_WAVE_set_active(&xVoiceList[u32Voice], bState);
+                ADSR_trigger(&xAdsrEnvList[u32Voice]);
+            }
+            else
+            {
+                ADSR_release(&xAdsrEnvList[u32Voice]);
+            }
         }
     }
     else
     {
-        (void)AUDIO_WAVE_set_active(&xVoiceList[eVoice], bState);
+        /* Handle ADSR section */
+        if ( bState )
+        {
+            (void)AUDIO_WAVE_set_active(&xVoiceList[eVoice], bState);
+            ADSR_trigger(&xAdsrEnvList[eVoice]);
+        }
+        else
+        {
+            ADSR_release(&xAdsrEnvList[eVoice]);
+        }
     }
 
     AUDIO_HAL_isr_ctrl(true);
@@ -276,14 +308,34 @@ audio_ret_t audio_cmd_set_midi_note(audio_voice_id_t eVoice, uint8_t u8MidiNote,
         {
             (void)AUDIO_WAVE_update_freq(&xVoiceList[u32Voice], fFreq);
             (void)AUDIO_WAVE_update_amp(&xVoiceList[u32Voice], fAmp);
-            (void)AUDIO_WAVE_set_active(&xVoiceList[u32Voice], bActive);
+
+            /* Handle ADSR section */
+            if ( bActive )
+            {
+                (void)AUDIO_WAVE_set_active(&xVoiceList[u32Voice], bActive);
+                ADSR_trigger(&xAdsrEnvList[u32Voice]);
+            }
+            else
+            {
+                ADSR_release(&xAdsrEnvList[u32Voice]);
+            }
         }
     }
     else
     {
         (void)AUDIO_WAVE_update_freq(&xVoiceList[eVoice], fFreq);
         (void)AUDIO_WAVE_update_amp(&xVoiceList[eVoice], fAmp);
-        (void)AUDIO_WAVE_set_active(&xVoiceList[eVoice], bActive);
+
+        /* Handle ADSR section */
+        if ( bActive )
+        {
+            (void)AUDIO_WAVE_set_active(&xVoiceList[eVoice], bActive);
+            ADSR_trigger(&xAdsrEnvList[eVoice]);
+        }
+        else
+        {
+            ADSR_release(&xAdsrEnvList[eVoice]);
+        }
     }
 
     AUDIO_HAL_isr_ctrl(true);
@@ -355,6 +407,8 @@ audio_ret_t AUDIO_init(void)
     for (uint32_t u32Voice = 0; u32Voice < (uint32_t)AUDIO_VOICE_NUM; u32Voice++)
     {
         AUDIO_WAVE_init_voice(&xVoiceList[u32Voice], AUDIO_SAMPLE_RATE, AUDIO_AMPLITUDE);
+
+        ADSR_init(&xAdsrEnvList[u32Voice], AUDIO_SAMPLE_RATE);
     }
 
     if ( AUDIO_HAL_init(audio_hal_cb) == AUDIO_OK )

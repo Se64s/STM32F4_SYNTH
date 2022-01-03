@@ -169,7 +169,7 @@ static void CliTask_main(void *argument)
     shell_put_line("START CLI...");
 
     /* Init reception */
-    (void)sys_usart_read(CLI_USART, &u8RxData, 1U);
+    (void)sys_usart_read(CLI_USART, &u8RxData, SER_BUFF_SIZE);
 
     /* Infinite loop */
     for(;;)
