@@ -24,6 +24,9 @@
 /* Private typedef -----------------------------------------------------------*/
 /* Private define ------------------------------------------------------------*/
 
+/* Disable midi velocity */
+#define DISABLE_VELOCITY
+
 /* System sample rate in Hz */
 #define AUDIO_SAMPLE_RATE           ( 48000U )
 
@@ -36,7 +39,7 @@
 
 /* Audio out sample buffer, 2 channels, 1 position for channel (16b) */
 #define AUDIO_BUFF_DATA_WIDE        ( sizeof(uint16_t) )
-#define AUDIO_BUFF_SIZE             ( 512U )
+#define AUDIO_BUFF_SIZE             ( 64U )
 #define AUDIO_HALF_BUFF_SIZE        ( AUDIO_BUFF_SIZE / 2U )
 
 /* Delay buffer parameters */
@@ -296,9 +299,12 @@ audio_ret_t audio_cmd_set_midi_note(audio_voice_id_t eVoice, uint8_t u8MidiNote,
     ERR_ASSERT(u8MidiVel <= MAX_MIDI_NOTE);
 
     float fFreq = 440.0F * powf(2.0F, ((float)u8MidiNote - 69.0F) / 12.0F);
+#ifdef DISABLE_VELOCITY
+    float fAmp = 1.0F;
+#else
     float fdB = AUDIO_TOOL_lin_map((int)u8MidiVel, 1.0F, 127.0F, MIN_AMP_DB_MAP, MAX_AMP_DB_MAP);
     float fAmp = powf(10.0F, fdB / 20.0F);
-    // float fAmp = 1.0F;
+#endif
 
     AUDIO_HAL_isr_ctrl(false);
 

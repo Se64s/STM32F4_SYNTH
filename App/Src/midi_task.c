@@ -118,6 +118,16 @@ static void midi_cmd_2_cb(uint8_t cmd, uint8_t data0, uint8_t data1)
     static uint32_t u32Cmd2Cnt = 0U;
     uint8_t u8Status = MIDI_CMD_GET_STATUS(cmd);
 
+    // Midio out indicator
+    if ( u8Status == MIDI_STATUS_NOTE_ON )
+    {
+        sys_gpio_set_level(MIDI_STATUS_LED, SYS_GPIO_STATE_RESET);
+    }
+    else if ( u8Status == MIDI_STATUS_NOTE_OFF )
+    {
+        sys_gpio_set_level(MIDI_STATUS_LED, SYS_GPIO_STATE_SET);
+    }
+
     if ( (u8Status == MIDI_STATUS_NOTE_OFF) || (u8Status == MIDI_STATUS_NOTE_ON) )
     {
         (void)VOICE_update_note(&MidiVoiceEngine, cmd, data0, data1);
@@ -243,8 +253,6 @@ static void MidiTask_main(void *argument)
     {
         uint32_t u32Flags = osEventFlagsWait(midi_evt_handler, MIDI_EVT_DATA_IN, osFlagsWaitAny, osWaitForever);
 
-        sys_gpio_set_level(MIDI_STATUS_LED, SYS_GPIO_STATE_RESET);
-
         if ( SYS_CHECK_EVT(u32Flags, MIDI_EVT_DATA_IN) )
         {
             /* Clear rx buffer */
@@ -258,8 +266,6 @@ static void MidiTask_main(void *argument)
                 }
             }
         }
-
-        sys_gpio_set_level(MIDI_STATUS_LED, SYS_GPIO_STATE_SET);
     }
 }
 

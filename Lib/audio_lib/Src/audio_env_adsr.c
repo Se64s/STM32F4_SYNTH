@@ -16,7 +16,7 @@
 /* Private typedef -----------------------------------------------------------*/
 /* Private define ------------------------------------------------------------*/
 
-#define DEFAULT_ATTACK_TIME     ( 0.1F )
+#define DEFAULT_ATTACK_TIME     ( 0.05F )
 #define DEFAULT_DECAY_TIME      ( 0.1F )
 #define DEFAULT_RELEASE_TIME    ( 0.2F )
 

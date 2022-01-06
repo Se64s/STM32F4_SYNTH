@@ -92,7 +92,7 @@ float AUDIO_DELAY_process(AudioDelayCtrl_t *pxDelayCtrl, float fInputSample)
     ERR_ASSERT( pxDelayCtrl->fFeedback < 1.0F );
 
     // Compute delayed sample
-    float fOutSample = pxDelayCtrl->fBuffer[pxDelayCtrl->u32ReadPos];
+    float fDelaySample = pxDelayCtrl->fBuffer[pxDelayCtrl->u32ReadPos] * pxDelayCtrl->fFeedback;
     pxDelayCtrl->u32ReadPos++;
     if (pxDelayCtrl->u32ReadPos >= pxDelayCtrl->u32BufferSize)
     {
@@ -100,7 +100,8 @@ float AUDIO_DELAY_process(AudioDelayCtrl_t *pxDelayCtrl, float fInputSample)
     }
 
     // Add current sample to delay structure
-    pxDelayCtrl->fBuffer[pxDelayCtrl->u32WritePos] = fInputSample + pxDelayCtrl->fFeedback * fOutSample;
+    float fOutSample = fDelaySample + fInputSample;
+    pxDelayCtrl->fBuffer[pxDelayCtrl->u32WritePos] = fOutSample;
     pxDelayCtrl->u32WritePos++;
     if (pxDelayCtrl->u32WritePos >= pxDelayCtrl->u32BufferSize)
     {
