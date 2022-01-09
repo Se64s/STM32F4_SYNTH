@@ -47,6 +47,8 @@ int cli_cmd_detune(int argc, char *argv[]);
 int cli_cmd_midi(int argc, char *argv[]);
 int cli_cmd_delay(int argc, char *argv[]);
 int cli_cmd_filter(int argc, char *argv[]);
+int cli_cmd_effect_slot(int argc, char *argv[]);
+int cli_cmd_effect_enable(int argc, char *argv[]);
 
 /* Private variable --------------------------------------------------------*/
 
@@ -57,6 +59,8 @@ static const sShellCommand s_shell_commands[] = {
     { "midi", cli_cmd_midi, "Activate midi note. Voice [0-7], Note [0-126], State [0-1]" },
     { "delay", cli_cmd_delay, "Update DELAY section. Time (seconds), Feedback (0-1)" },
     { "filter", cli_cmd_filter, "Update FILTER section. Frquency (Hz), Q" },
+    { "effect_slot", cli_cmd_effect_slot, "Config effect slot. SlotId [0-1], EffectId [0-2]" },
+    { "effect_enable", cli_cmd_effect_enable, "Enable effect slot. SlotId [0-1], Enable [0-1]" },
     { "logon", cli_cmd_logOn, "Enable global log" },
     { "logoff", cli_cmd_logOff, "Disable global log" },
     { "setloglvl", cli_cmd_setLogLvl, "Set new log level for defined interface. Interface [0-7], Level [0-3]" },
@@ -301,11 +305,22 @@ int cli_cmd_delay(int argc, char *argv[])
         {
             audio_cmd_t xAudioCmd = { 0U };
 
-            xAudioCmd.eCmdId = AUDIO_CMD_UPDATE_DELAY;
-            xAudioCmd.xCmdPayload.xUpdateDelay.fTime = fTime;
-            xAudioCmd.xCmdPayload.xUpdateDelay.fFeedback = fFeedback;
+            xAudioCmd.eCmdId = AUDIO_CMD_EFFECT_UPDATE;
+            xAudioCmd.xCmdPayload.xEffectUpdate.eParamId = AUDIO_EFFECT_PARAMETER_DELAY_TIME;
+            xAudioCmd.xCmdPayload.xEffectUpdate.fNewValue = fTime;
 
-            if (AUDIO_handle_cmd(xAudioCmd) != AUDIO_OK)
+            if (AUDIO_handle_cmd(xAudioCmd) == AUDIO_OK)
+            {
+                xAudioCmd.eCmdId = AUDIO_CMD_EFFECT_UPDATE;
+                xAudioCmd.xCmdPayload.xEffectUpdate.eParamId = AUDIO_EFFECT_PARAMETER_DELAY_FB;
+                xAudioCmd.xCmdPayload.xEffectUpdate.fNewValue = fFeedback;
+
+                if (AUDIO_handle_cmd(xAudioCmd) != AUDIO_OK)
+                {
+                    iRetCode = SHELL_RET_ERR;
+                }
+            }
+            else
             {
                 iRetCode = SHELL_RET_ERR;
             }
@@ -351,9 +366,110 @@ int cli_cmd_filter(int argc, char *argv[])
 
         audio_cmd_t xAudioCmd = { 0U };
 
-        xAudioCmd.eCmdId = AUDIO_CMD_UPDATE_FILTER;
-        xAudioCmd.xCmdPayload.xUpdateFilter.fFreq = fFreqCutoff;
-        xAudioCmd.xCmdPayload.xUpdateFilter.fQ = fQ;
+        xAudioCmd.eCmdId = AUDIO_CMD_EFFECT_UPDATE;
+        xAudioCmd.xCmdPayload.xEffectUpdate.eParamId = AUDIO_EFFECT_PARAMETER_FILTER_FREQ;
+        xAudioCmd.xCmdPayload.xEffectUpdate.fNewValue = fFreqCutoff;
+
+        if (AUDIO_handle_cmd(xAudioCmd) == AUDIO_OK)
+        {
+            xAudioCmd.eCmdId = AUDIO_CMD_EFFECT_UPDATE;
+            xAudioCmd.xCmdPayload.xEffectUpdate.eParamId = AUDIO_EFFECT_PARAMETER_FILTER_Q;
+            xAudioCmd.xCmdPayload.xEffectUpdate.fNewValue = fQ;
+
+            if (AUDIO_handle_cmd(xAudioCmd) != AUDIO_OK)
+            {
+                iRetCode = SHELL_RET_ERR;
+            }
+        }
+        else
+        {
+            iRetCode = SHELL_RET_ERR;
+        }
+    }
+
+    if ( iRetCode == SHELL_RET_OK )
+    {
+        shell_put_line(SHELL_STR_OK);
+    }
+    else
+    {
+        shell_put_line(SHELL_STR_ERR);
+    }
+
+    return iRetCode;
+}
+
+/**
+ * @brief Configure effect slot
+ * 
+ * @param argc Number of arguments, 3
+ * @param argv List of arguments, argv[0]: cmd name, argv[1] slot id, argv[2] selected effect.
+ * @return int Status:  0, OK, !0, ERROR
+ */
+int cli_cmd_effect_slot(int argc, char *argv[])
+{
+    int iRetCode = SHELL_RET_OK;
+
+    if ( argc != 3U )
+    {
+        iRetCode = SHELL_RET_ERR;
+    }
+    else
+    {
+        /* Check interface */
+        uint8_t u8Slot = (float)atoi(argv[1U]);
+        uint8_t u8Effect = (float)atoi(argv[2U]);
+
+        audio_cmd_t xAudioCmd = { 0U };
+
+        xAudioCmd.eCmdId = AUDIO_CMD_EFFECT_SET_SLOT;
+        xAudioCmd.xCmdPayload.xSetSlot.eSlot = u8Slot;
+        xAudioCmd.xCmdPayload.xSetSlot.eEffectId = u8Effect;
+
+        if (AUDIO_handle_cmd(xAudioCmd) != AUDIO_OK)
+        {
+            iRetCode = SHELL_RET_ERR;
+        }
+    }
+
+    if ( iRetCode == SHELL_RET_OK )
+    {
+        shell_put_line(SHELL_STR_OK);
+    }
+    else
+    {
+        shell_put_line(SHELL_STR_ERR);
+    }
+
+    return iRetCode;
+}
+
+/**
+ * @brief Enable effect slot
+ * 
+ * @param argc Number of arguments, 3
+ * @param argv List of arguments, argv[0]: cmd name, argv[1] slot id, argv[2] effect activation state.
+ * @return int Status:  0, OK, !0, ERROR
+ */
+int cli_cmd_effect_enable(int argc, char *argv[])
+{
+    int iRetCode = SHELL_RET_OK;
+
+    if ( argc != 3U )
+    {
+        iRetCode = SHELL_RET_ERR;
+    }
+    else
+    {
+        /* Check interface */
+        uint8_t u8Slot = (float)atoi(argv[1U]);
+        uint8_t u8Activate = (float)atoi(argv[2U]);
+
+        audio_cmd_t xAudioCmd = { 0U };
+
+        xAudioCmd.eCmdId = AUDIO_CMD_EFFECT_ACTIVATE;
+        xAudioCmd.xCmdPayload.xActivateSlot.eSlot = u8Slot;
+        xAudioCmd.xCmdPayload.xActivateSlot.bActive = (bool)u8Activate;
 
         if (AUDIO_handle_cmd(xAudioCmd) != AUDIO_OK)
         {

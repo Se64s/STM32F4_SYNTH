@@ -33,6 +33,7 @@ typedef struct AudioDelayCtrl {
     uint32_t u32ReadPos;
     uint32_t u32SampleRate;
     float fFeedback;
+    float fDelayTime;
 } AudioDelayCtrl_t;
 
 /* Exported constants --------------------------------------------------------*/

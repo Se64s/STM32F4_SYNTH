@@ -19,6 +19,7 @@ extern "C" {
 
 /* Includes ------------------------------------------------------------------*/
 #include "audio_common.h"
+#include "audio_effect.h"
 
 /* Exported types ------------------------------------------------------------*/
 
@@ -29,8 +30,10 @@ typedef enum {
     AUDIO_CMD_SET_MIDI_NOTE,
     AUDIO_CMD_SET_WAVEFORM,
     AUDIO_CMD_SET_DETUNE,
-    AUDIO_CMD_UPDATE_FILTER,
-    AUDIO_CMD_UPDATE_DELAY,
+    AUDIO_CMD_SET_ADSR,
+    AUDIO_CMD_EFFECT_UPDATE,
+    AUDIO_CMD_EFFECT_SET_SLOT,
+    AUDIO_CMD_EFFECT_ACTIVATE,
     AUDIO_CMD_NUM_CMD
 } audio_cmd_id_t;
 
@@ -63,15 +66,29 @@ typedef struct audio_cmd_set_detune {
     float fDetuneLvl;
 } audio_cmd_set_detune_t;
 
-typedef struct audio_cmd_update_filter {
-    float fFreq;
-    float fQ;
-} audio_cmd_payload_update_filter_t;
+typedef struct audio_cmd_set_adsr {
+    audio_voice_id_t eVoiceId;
+    float fAttackTime;
+    float fDecayTime;
+    float fReleaseTime;
+    float fAttackLvl;
+    float fSustainLvl;
+} audio_cmd_set_adsr_t;
 
-typedef struct audio_cmd_update_delay {
-    float fTime;
-    float fFeedback;
-} audio_cmd_payload_update_delay_t;
+typedef struct audio_cmd_effect_update {
+    audio_effect_parameter_id_t eParamId;
+    float fNewValue;
+} audio_cmd_effect_update_t;
+
+typedef struct audio_cmd_effect_set_slot {
+    audio_effect_slot_t eSlot;
+    audio_effect_id_t eEffectId;
+} audio_cmd_effect_set_slot_t;
+
+typedef struct audio_cmd_effect_activate_slot {
+    audio_effect_slot_t eSlot;
+    bool bActive;
+} audio_cmd_effect_activate_slot_t;
 
 /* Gather all commands in same structure */
 
@@ -81,8 +98,10 @@ typedef union audio_cmd_payload {
     audio_cmd_payload_set_midi_note_t  xSetMidiNote;
     audio_cmd_payload_set_wave_t       xSetWave;
     audio_cmd_set_detune_t             xSetDetune;
-    audio_cmd_payload_update_filter_t  xUpdateFilter;
-    audio_cmd_payload_update_delay_t   xUpdateDelay;
+    audio_cmd_set_adsr_t               xSetAdsr;
+    audio_cmd_effect_update_t          xEffectUpdate;
+    audio_cmd_effect_set_slot_t        xSetSlot;
+    audio_cmd_effect_activate_slot_t   xActivateSlot;
 } audio_cmd_payload_t;
 
 /* Command base structure */

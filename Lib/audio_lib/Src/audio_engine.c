@@ -14,8 +14,6 @@
 #include "audio_hal.h"
 #include "audio_tools.h"
 #include "audio_wavetable.h"
-#include "audio_filter.h"
-#include "audio_delay.h"
 #include "audio_env_adsr.h"
 
 #include "arm_math.h"
@@ -34,18 +32,13 @@
 #define AUDIO_FULL_AMPLITUDE        ( 32767.0F )
 #define AUDIO_FULL_AMPLITUDE_P      ( 32766 )
 #define AUDIO_FULL_AMPLITUDE_M      ( -32767 )
-#define AUDIO_AMPLITUDE             ( AUDIO_FULL_AMPLITUDE / (float)AUDIO_VOICE_NUM )
+#define AUDIO_AMPLITUDE             ( AUDIO_FULL_AMPLITUDE / (float)(AUDIO_VOICE_NUM * 3.0F) )
 #define AUDIO_AMPLITUDE_NONE        ( 0.0F )
 
 /* Audio out sample buffer, 2 channels, 1 position for channel (16b) */
 #define AUDIO_BUFF_DATA_WIDE        ( sizeof(uint16_t) )
 #define AUDIO_BUFF_SIZE             ( 64U )
 #define AUDIO_HALF_BUFF_SIZE        ( AUDIO_BUFF_SIZE / 2U )
-
-/* Delay buffer parameters */
-#define AUDIO_DELAY_BUFF_SIZE       ( 9600U ) // Max 0.2s delay
-#define AUDIO_DELAY_FEDDBACK        ( 0.8F )
-#define AUDIO_DELAY_TIME            ( 0.199F )
 
 /* Audio buffer critical positions for DMA transfer */
 #define AUDIO_BUFF_INIT_INDEX       ( 0U )
@@ -72,13 +65,6 @@ env_adsr_ctrl_t xAdsrEnvList[AUDIO_VOICE_NUM];
 
 /* Audio buffer */
 uint16_t u16AudioBuffer[AUDIO_BUFF_SIZE] = { 0U };
-
-/* Filter */
-AudioFilterLP_t xFilterLP = { 0U };
-
-/* Delay */
-float fDelayBuffer[AUDIO_DELAY_BUFF_SIZE] = { 0.0F };
-AudioDelayCtrl_t xDelayCtrl = { 0U };
 
 /* Private function prototypes -----------------------------------------------*/
 
@@ -144,24 +130,6 @@ audio_ret_t audio_cmd_set_waveform(audio_voice_id_t eVoice, audio_wave_id_t eWav
  */
 audio_ret_t audio_cmd_set_detune(audio_voice_id_t eVoice, float fDetuneLvl);
 
-/**
- * @brief Update parameters to delay effect
- * 
- * @param fTime time of delay.
- * @param fFeedback feedback of delay.
- * @return audio_ret_t operation result.
- */
-audio_ret_t audio_cmd_update_delay(float fTime, float fFeedback);
-
-/**
- * @brief Update parameters of filter section.
- * 
- * @param fFreq Cutoff frequency
- * @param fQ Q param
- * @return audio_ret_t operation result.
- */
-audio_ret_t audio_cmd_update_filter(float fFreq, float fQ);
-
 /* Private function definition -----------------------------------------------*/
 
 static void audio_hal_cb(audio_hal_event_t event)
@@ -211,11 +179,8 @@ static void audio_update_buffer(uint16_t *pu16Buffer, uint16_t u16StartIndex)
             }
         }
 
-        // Add filter action
-        fData = AUDIO_FILTER_LP_process(&xFilterLP, fData);
-
-        // Add delay action
-        fData = AUDIO_DELAY_process(&xDelayCtrl, fData);
+        // Add effect section
+        fData = AUDIO_EFFECT_render(fData);
 
         // Check DAC boundaries to prevent signal rollback
         int16_t i16DacData = (int16_t)fData;
@@ -405,41 +370,16 @@ audio_ret_t audio_cmd_set_detune(audio_voice_id_t eVoice, float fDetuneLvl)
     return AUDIO_OK;
 }
 
-audio_ret_t audio_cmd_update_delay(float fTime, float fFeedback)
-{
-    audio_ret_t eRetval = AUDIO_ERR;
-
-    if ( AUDIO_DELAY_update_delay(&xDelayCtrl, fTime) == AUDIO_OK )
-    {
-        eRetval = AUDIO_DELAY_update_feedback(&xDelayCtrl, fFeedback);
-    }
-
-    return eRetval;
-}
-
-audio_ret_t audio_cmd_update_filter(float fFreq, float fQ)
-{
-    audio_ret_t eRetval = AUDIO_FILTER_LP_set_frequency(&xFilterLP, fFreq);
-
-    if ( eRetval == AUDIO_OK )
-    {
-        eRetval = AUDIO_FILTER_LP_set_q(&xFilterLP, fQ);
-    }
-
-    return AUDIO_OK;
-}
-
 /* Public function prototypes ------------------------------------------------*/
 
 audio_ret_t AUDIO_init(void)
 {
     audio_ret_t eRetval = AUDIO_ERR;
 
-    /* Init filter section */
-    AUDIO_FILTER_LP_init(&xFilterLP);
-
-    /* Init delay section */
-    AUDIO_DELAY_init(&xDelayCtrl, AUDIO_SAMPLE_RATE, fDelayBuffer, AUDIO_DELAY_BUFF_SIZE);
+    /* Init effect section */
+    AUDIO_EFFECT_init(AUDIO_SAMPLE_RATE);
+    AUDIO_EFFECT_set_slot(AUDIO_EFFECT_SLOT_0, AUDIO_EFFECT_FILTER_LP);
+    AUDIO_EFFECT_set_slot(AUDIO_EFFECT_SLOT_1, AUDIO_EFFECT_DELAY);
 
     /* Set all voices with known values */
     for (uint32_t u32Voice = 0; u32Voice < (uint32_t)AUDIO_VOICE_NUM; u32Voice++)
@@ -527,21 +467,35 @@ audio_ret_t AUDIO_handle_cmd(audio_cmd_t xAudioCmd)
         }
         break;
 
-        case AUDIO_CMD_UPDATE_FILTER:
+        case AUDIO_CMD_SET_ADSR:
         {
-            eRetval = audio_cmd_update_filter(
-                                                xAudioCmd.xCmdPayload.xUpdateFilter.fFreq,
-                                                xAudioCmd.xCmdPayload.xUpdateFilter.fQ
+        }
+        break;
+
+        case AUDIO_CMD_EFFECT_UPDATE:
+        {
+            eRetval = AUDIO_EFFECT_parameter_update(
+                                                    xAudioCmd.xCmdPayload.xEffectUpdate.eParamId, 
+                                                    xAudioCmd.xCmdPayload.xEffectUpdate.fNewValue
+                                                    );
+        }
+        break;
+
+        case AUDIO_CMD_EFFECT_SET_SLOT:
+        {
+            eRetval = AUDIO_EFFECT_set_slot(
+                                            xAudioCmd.xCmdPayload.xSetSlot.eSlot, 
+                                            xAudioCmd.xCmdPayload.xSetSlot.eEffectId
                                             );
         }
         break;
 
-        case AUDIO_CMD_UPDATE_DELAY:
+        case AUDIO_CMD_EFFECT_ACTIVATE:
         {
-            eRetval = audio_cmd_update_delay(
-                                                xAudioCmd.xCmdPayload.xUpdateDelay.fTime,
-                                                xAudioCmd.xCmdPayload.xUpdateDelay.fFeedback
-                                            );
+            eRetval = AUDIO_EFFECT_activate_slot(
+                                                xAudioCmd.xCmdPayload.xActivateSlot.eSlot, 
+                                                xAudioCmd.xCmdPayload.xActivateSlot.bActive
+                                                );
         }
         break;
 

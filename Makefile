@@ -44,6 +44,7 @@ Lib/SWO/Src/swo.c \
 Lib/printf/Src/printf.c \
 Lib/Shell/Src/shell.c \
 Lib/audio_lib/Src/audio_engine.c \
+Lib/audio_lib/Src/audio_effect.c \
 Lib/audio_lib/Src/audio_env_ramp.c \
 Lib/audio_lib/Src/audio_env_adsr.c \
 Lib/audio_lib/Src/audio_delay.c \

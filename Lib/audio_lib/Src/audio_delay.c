@@ -54,6 +54,8 @@ audio_ret_t AUDIO_DELAY_update_delay(AudioDelayCtrl_t *pxDelayCtrl, float fDelay
 
     if ( fDelayTime < fMaxDelay )
     {
+        pxDelayCtrl->fDelayTime = fDelayTime;
+
         float fDelayNumSamples = fDelayTime * (float)pxDelayCtrl->u32SampleRate;
 
         pxDelayCtrl->u32ReadPos = ((pxDelayCtrl->u32WritePos + pxDelayCtrl->u32BufferSize) - (uint32_t)fDelayNumSamples) % pxDelayCtrl->u32BufferSize;
