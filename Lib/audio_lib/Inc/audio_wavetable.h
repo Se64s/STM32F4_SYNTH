@@ -30,8 +30,10 @@ typedef struct AudiowaveTableVoice {
     bool bActive;                   /**< State of current voice */
     float fFreq;                    /**< Current frequency in Hz */
     float fCurrentSample;           /**< Index of current sample */
+    float fSubCurrentSample;        /**< Index of current sub-oscilator sample */
     float fMaxAmplitude;            /**< Max signal amplitude */
     float fAmplitude;               /**< Current amplitude */
+    float fDetune;                  /**< Detune factor */
     uint32_t u32SampleRate;         /**< Signal sample rate */
     const float *pu32WaveTable;     /**< Pointer to wave table in flash */
     uint32_t u32WaveTableSize;      /**< Size of wave table */
@@ -40,6 +42,16 @@ typedef struct AudiowaveTableVoice {
 
 /* Exported constants --------------------------------------------------------*/
 /* Exported macro ------------------------------------------------------------*/
+
+/* Parameter boundaries */
+
+#define AUDIO_WAVE_MAX_AMPLITUDE    ( 1.0F )
+#define AUDIO_WAVE_MIN_AMPLITUDE    ( 0.0F )
+
+#define AUDIO_WAVE_MAX_DETUNE       ( 1.0F )
+#define AUDIO_WAVE_NON_DETUNE       ( 0.0F )
+#define AUDIO_WAVE_MIN_DETUNE       ( -1.0F )
+
 /* Exported functions prototypes ---------------------------------------------*/
 
 /**
@@ -77,6 +89,15 @@ audio_ret_t AUDIO_WAVE_update_freq(AudioWaveTableVoice_t *pVoice, float fFreq);
  * @return audio_ret_t operation result.
  */
 audio_ret_t AUDIO_WAVE_update_amp(AudioWaveTableVoice_t *pVoice, float fAmp);
+
+/**
+ * @brief Update voice detune
+ * 
+ * @param pVoice pointer of control structure to update.
+ * @param fDetuneLvl new detune (-1.0 to 1.0).
+ * @return audio_ret_t operation result.
+ */
+audio_ret_t AUDIO_WAVE_update_detune(AudioWaveTableVoice_t *pVoice, float fDetuneLvl);
 
 /**
  * @brief Set active state in provided voice.

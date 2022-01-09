@@ -43,6 +43,7 @@ int cli_cmd_logOn(int argc, char *argv[]);
 int cli_cmd_logOff(int argc, char *argv[]);
 int cli_cmd_setLogLvl(int argc, char *argv[]);
 int cli_cmd_wave(int argc, char *argv[]);
+int cli_cmd_detune(int argc, char *argv[]);
 int cli_cmd_midi(int argc, char *argv[]);
 int cli_cmd_delay(int argc, char *argv[]);
 int cli_cmd_filter(int argc, char *argv[]);
@@ -52,7 +53,8 @@ int cli_cmd_filter(int argc, char *argv[]);
 /* List of commands implemented */
 static const sShellCommand s_shell_commands[] = {
     { "wave", cli_cmd_wave, "Select output waveform. WaveId [0-4]" },
-    { "midi", cli_cmd_midi, "Activate midi note. Voice [0-5], Note [0-126], State [0-1]" },
+    { "detune", cli_cmd_detune, "Update voice detuning parameter. VoiceId [0-7], DetuneLvl [-1.0, 1.0]" },
+    { "midi", cli_cmd_midi, "Activate midi note. Voice [0-7], Note [0-126], State [0-1]" },
     { "delay", cli_cmd_delay, "Update DELAY section. Time (seconds), Feedback (0-1)" },
     { "filter", cli_cmd_filter, "Update FILTER section. Frquency (Hz), Q" },
     { "logon", cli_cmd_logOn, "Enable global log" },
@@ -157,6 +159,51 @@ int cli_cmd_wave(int argc, char *argv[])
         else
         {
             shell_put_line("Wrong wave id value!");
+            iRetCode = SHELL_RET_ERR;
+        }
+    }
+
+    if ( iRetCode == SHELL_RET_OK )
+    {
+        shell_put_line(SHELL_STR_OK);
+    }
+    else
+    {
+        shell_put_line(SHELL_STR_ERR);
+    }
+
+    return iRetCode;
+}
+
+/**
+ * @brief Update detune parameter.
+ * 
+ * @param argc number of arguments, 3.
+ * @param argv List of arguments, argv[0]: cmd name, argv[1] voice_id, argv[2] detune level.
+ * @return int Status:  0, OK, !0, ERROR.
+ */
+int cli_cmd_detune(int argc, char *argv[])
+{
+    int iRetCode = SHELL_RET_OK;
+
+    if ( argc != 3U )
+    {
+        iRetCode = SHELL_RET_ERR;
+    }
+    else
+    {
+        /* Check interface */
+        uint8_t u8VoiceId = (uint8_t)atof(argv[1U]);
+        float fDetuneLvl = (float)atof(argv[2U]);
+
+        audio_cmd_t xAudioCmd = { 0U };
+
+        xAudioCmd.eCmdId = AUDIO_CMD_SET_DETUNE;
+        xAudioCmd.xCmdPayload.xSetDetune.eVoiceId = (audio_voice_id_t)u8VoiceId;
+        xAudioCmd.xCmdPayload.xSetDetune.fDetuneLvl = fDetuneLvl;
+
+        if (AUDIO_handle_cmd(xAudioCmd) != AUDIO_OK)
+        {
             iRetCode = SHELL_RET_ERR;
         }
     }

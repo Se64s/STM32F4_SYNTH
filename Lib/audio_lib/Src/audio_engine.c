@@ -136,6 +136,15 @@ audio_ret_t audio_cmd_set_midi_note(audio_voice_id_t eVoice, uint8_t u8MidiNote,
 audio_ret_t audio_cmd_set_waveform(audio_voice_id_t eVoice, audio_wave_id_t eWaveId);
 
 /**
+ * @brief Change current voice detune.
+ * 
+ * @param eVoice voice id to update.
+ * @param fDetuneLvl amount of detune, range -1.0 to 1.0.
+ * @return audio_ret_t operation result.
+ */
+audio_ret_t audio_cmd_set_detune(audio_voice_id_t eVoice, float fDetuneLvl);
+
+/**
  * @brief Update parameters to delay effect
  * 
  * @param fTime time of delay.
@@ -373,6 +382,29 @@ audio_ret_t audio_cmd_set_waveform(audio_voice_id_t eVoice, audio_wave_id_t eWav
     return AUDIO_OK;
 }
 
+audio_ret_t audio_cmd_set_detune(audio_voice_id_t eVoice, float fDetuneLvl)
+{
+    ERR_ASSERT(eVoice <= AUDIO_VOICE_NUM);
+
+    AUDIO_HAL_isr_ctrl(false);
+
+    if (eVoice == AUDIO_VOICE_NUM)
+    {
+        for (uint32_t u32Voice = 0; u32Voice < (uint32_t)AUDIO_VOICE_NUM; u32Voice++)
+        {
+            (void)AUDIO_WAVE_update_detune(&xVoiceList[u32Voice], fDetuneLvl);
+        }
+    }
+    else
+    {
+        (void)AUDIO_WAVE_update_detune(&xVoiceList[eVoice], fDetuneLvl);
+    }
+
+    AUDIO_HAL_isr_ctrl(true);
+
+    return AUDIO_OK;
+}
+
 audio_ret_t audio_cmd_update_delay(float fTime, float fFeedback)
 {
     audio_ret_t eRetval = AUDIO_ERR;
@@ -482,6 +514,15 @@ audio_ret_t AUDIO_handle_cmd(audio_cmd_t xAudioCmd)
             eRetval = audio_cmd_set_waveform(
                                                 xAudioCmd.xCmdPayload.xSetWave.eVoiceId,
                                                 xAudioCmd.xCmdPayload.xSetWave.eWaveId
+                                            );
+        }
+        break;
+
+        case AUDIO_CMD_SET_DETUNE:
+        {
+            eRetval = audio_cmd_set_detune(
+                                                xAudioCmd.xCmdPayload.xSetDetune.eVoiceId,
+                                                xAudioCmd.xCmdPayload.xSetDetune.fDetuneLvl
                                             );
         }
         break;

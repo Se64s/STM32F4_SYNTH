@@ -48,9 +48,11 @@ audio_ret_t AUDIO_WAVE_init_voice(AudioWaveTableVoice_t *pVoice, uint32_t u32Sam
 
     pVoice->bActive = false;
     pVoice->fCurrentSample = 0.0F;
+    pVoice->fSubCurrentSample = 0.0F;
     pVoice->fFreq = WAVE_DEFAULT_FREQ;
     pVoice->fMaxAmplitude = fMaxAmplitude;
-    pVoice->fAmplitude = 1.0F;
+    pVoice->fAmplitude = AUDIO_WAVE_MAX_AMPLITUDE;
+    pVoice->fDetune = AUDIO_WAVE_NON_DETUNE;
     pVoice->u32SampleRate = u32SampleRate;
     pVoice->u32WaveTableSize = WAVE_TABLE_SIZE;
     pVoice->eWaveId = WAVE_DEFAULT_WAVE;
@@ -82,10 +84,21 @@ audio_ret_t AUDIO_WAVE_update_freq(AudioWaveTableVoice_t *pVoice, float fFreq)
 audio_ret_t AUDIO_WAVE_update_amp(AudioWaveTableVoice_t *pVoice, float fAmp)
 {
     ERR_ASSERT(pVoice != NULL);
-    ERR_ASSERT(fAmp >= 0.0F);
-    ERR_ASSERT(fAmp <= 1.0F);
+    ERR_ASSERT(fAmp >= AUDIO_WAVE_MIN_AMPLITUDE);
+    ERR_ASSERT(fAmp <= AUDIO_WAVE_MAX_AMPLITUDE);
 
     pVoice->fAmplitude = fAmp * pVoice->fMaxAmplitude;
+
+    return AUDIO_OK;
+}
+
+audio_ret_t AUDIO_WAVE_update_detune(AudioWaveTableVoice_t *pVoice, float fDetuneLvl)
+{
+    ERR_ASSERT(pVoice != NULL);
+    ERR_ASSERT(fDetuneLvl >= AUDIO_WAVE_MIN_DETUNE);
+    ERR_ASSERT(fDetuneLvl <= AUDIO_WAVE_MAX_DETUNE);
+
+    pVoice->fDetune = fDetuneLvl;
 
     return AUDIO_OK;
 }
@@ -112,6 +125,7 @@ float AUDIO_WAVE_get_next_sample(AudioWaveTableVoice_t *pVoice)
 
     if ( pVoice->bActive )
     {
+        // Compute main voice
         // Compute linear interpolation
         uint32_t u32IndexBelow = (uint32_t)pVoice->fCurrentSample;
         uint32_t u32IndexAbove = (u32IndexBelow + 1U) % pVoice->u32WaveTableSize;
@@ -127,6 +141,27 @@ float AUDIO_WAVE_get_next_sample(AudioWaveTableVoice_t *pVoice)
         while (pVoice->fCurrentSample >= (float)pVoice->u32WaveTableSize)
         {
             pVoice->fCurrentSample -= (float)pVoice->u32WaveTableSize;
+        }
+
+        // Compute sub-oscilator
+        if ( pVoice->fDetune != AUDIO_WAVE_NON_DETUNE )
+        {
+            // Re-compute linear interpolation
+            u32IndexBelow = (uint32_t)pVoice->fSubCurrentSample;
+            u32IndexAbove = (u32IndexBelow + 1U) % pVoice->u32WaveTableSize;
+
+            fFractionAbove = pVoice->fSubCurrentSample - (float)u32IndexBelow;
+            fFractionBelow = 1.0F - fFractionAbove;
+
+            fOutData += pVoice->fAmplitude * ( fFractionAbove * pVoice->pu32WaveTable[u32IndexAbove] + fFractionBelow * pVoice->pu32WaveTable[u32IndexBelow] );
+
+            float fSubOscFreq = pVoice->fFreq + pVoice->fFreq * pVoice->fDetune;
+
+            pVoice->fSubCurrentSample += (pVoice->u32WaveTableSize * fSubOscFreq) / pVoice->u32SampleRate;
+            while (pVoice->fSubCurrentSample >= (float)pVoice->u32WaveTableSize)
+            {
+                pVoice->fSubCurrentSample -= (float)pVoice->u32WaveTableSize;
+            }
         }
     }
 

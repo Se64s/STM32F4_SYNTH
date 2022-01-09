@@ -22,13 +22,13 @@ extern "C" {
 
 /* Exported types ------------------------------------------------------------*/
 
-
 /* Defined engine commands  */
 typedef enum {
     AUDIO_CMD_ACTIVATE_VOICE = 0x00,
     AUDIO_CMD_SET_FREQ,
     AUDIO_CMD_SET_MIDI_NOTE,
     AUDIO_CMD_SET_WAVEFORM,
+    AUDIO_CMD_SET_DETUNE,
     AUDIO_CMD_UPDATE_FILTER,
     AUDIO_CMD_UPDATE_DELAY,
     AUDIO_CMD_NUM_CMD
@@ -58,6 +58,11 @@ typedef struct audio_cmd_set_wave {
     audio_wave_id_t eWaveId;
 } audio_cmd_payload_set_wave_t;
 
+typedef struct audio_cmd_set_detune {
+    audio_voice_id_t eVoiceId;
+    float fDetuneLvl;
+} audio_cmd_set_detune_t;
+
 typedef struct audio_cmd_update_filter {
     float fFreq;
     float fQ;
@@ -75,6 +80,7 @@ typedef union audio_cmd_payload {
     audio_cmd_payload_set_freq_t       xSetFreq;
     audio_cmd_payload_set_midi_note_t  xSetMidiNote;
     audio_cmd_payload_set_wave_t       xSetWave;
+    audio_cmd_set_detune_t             xSetDetune;
     audio_cmd_payload_update_filter_t  xUpdateFilter;
     audio_cmd_payload_update_delay_t   xUpdateDelay;
 } audio_cmd_payload_t;
