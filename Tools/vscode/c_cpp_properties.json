@@ -1,16 +1,21 @@
 {
     "configurations": [
         {
-            "name": "ARM GNU",
+            "name": "STM32F4_SYNTH ARM GNU",
             "defines": [
                 "USE_HAL_DRIVER",
                 "STM32F446xx",
-                "PRINTF_INCLUDE_CONFIG_H"
+                "PRINTF_INCLUDE_CONFIG_H",
+                "ARM_MATH_CM4"
             ],
             "includePath": [
                 "App/Inc",
                 "Lib/SWO/Inc",
                 "Lib/printf/Inc",
+                "Lib/Shell/Inc",
+                "Lib/audio_lib/Inc",
+                "Lib/cbuf/Inc",
+                "Lib/midi/Inc",
                 "Sys/Sys_Common/Inc",
                 "Sys/Sys_Log/Inc",
                 "Sys/Sys_HAL/Inc",
@@ -22,10 +27,10 @@
                 "Middlewares/Third_Party/FreeRTOS/Source/portable/GCC/ARM_CM4F",
                 "Drivers/CMSIS/Device/ST/STM32F4xx/Include",
                 "Drivers/CMSIS/Include",
+                "Drivers/CMSIS/DSP/Include",
                 "${default}",
                 "./**"
             ],
-            "windowsSdkVersion": "10.0.19041.0",
             "compilerPath": "${config:ARMToolChainPath}/arm-none-eabi-gcc.exe",
             "cStandard": "c99",
             "cppStandard": "gnu++11",

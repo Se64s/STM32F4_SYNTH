@@ -19,5 +19,20 @@
             "runToMain": true,
             "svdFile": "${workspaceRoot}/Device/STM32F446.svd",
         },
+        {
+            "cwd": "${workspaceRoot}",
+            "executable": "${workspaceRoot}/build/STM32F4_SYNTH.elf",
+            "name": "Debug App Attach",
+            "request": "attach",
+            "type": "cortex-debug",
+            "servertype": "jlink",
+            "serverpath": "${config:JlinkGDBServer}",
+            "armToolchainPath": "${config:ARMToolChainPath}",
+            "device": "STM32F446RE",
+            "interface": "swd",
+            "serialNumber": "",
+            "runToMain": true,
+            "svdFile": "${workspaceRoot}/Device/STM32F446.svd",
+        },
     ]
 }

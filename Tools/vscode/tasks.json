@@ -7,26 +7,76 @@
 
     //*************************************************************************
     //
-    // APP TASKS
+    // BUILD TASKS
     //
     //*************************************************************************
 
         {
+            "label": "CMake - Setup",
             "type": "shell",
-            "label": "Build App",
-            "command": "mingw32-make.exe",
+            "group": "build",
+            "command": "${config:CMakeBuildApp}",
             "args": [
-                "GCC_PATH=${config:ARMToolChainPath}",
+                "-DARM_TOOLCHAIN_DIR=${config:ARMToolChainPath}",
+                "-DCMAKE_MAKE_PROGRAM=${config:NinjaBuildApp}",
+                "-GNinja",
+                ".."
             ],
             "options": {
-                "cwd": "${workspaceFolder}"
-            },
-            "group": {
-                "kind": "build",
-                "isDefault": true
+                "cwd": "${workspaceFolder}/build"
             },
             "problemMatcher": []
         },
+        {
+            "label": "CMake - Build",
+            "type": "shell",
+            "group": "build",
+            "command": "${config:CMakeBuildApp}",
+            "args": [
+                "--build",
+                "."
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}/build"
+            },
+            "problemMatcher": [
+                "$gcc"
+            ]
+        },
+        {
+            "label": "CMake - Clean",
+            "type": "shell",
+            "group": "build",
+            "command": "${config:CMakeBuildApp}",
+            "args": [
+                "--build",
+                ".",
+                "--target",
+                "clean"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}/build"
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "CMake - Clean, Setup & Build",
+            "group": "test",
+            "dependsOrder": "sequence",
+            "dependsOn": [
+                "CMake - Clean",
+                "CMake - Setup",
+                "CMake - Build",
+            ],
+            "problemMatcher": []
+        },
+
+    //*************************************************************************
+    //
+    // APP TASKS
+    //
+    //*************************************************************************
+
         {
             "type": "shell",
             "label": "Flash App",
@@ -49,7 +99,7 @@
             "command": "",
             "dependsOrder": "sequence",
             "dependsOn": [
-                "Build App",
+                "CMake - Build",
                 "Flash App"
             ],
             "group": {
@@ -64,19 +114,6 @@
     //
     //*************************************************************************
 
-        {
-            "type": "shell",
-            "label": "Clean All",
-            "command": "mingw32-make.exe",
-            "args": [
-                "clean"
-            ],
-            "options": {
-                "cwd": "${workspaceFolder}"
-            },
-            "group": "build",
-            "problemMatcher": []
-        },
         {
             "type": "shell",
             "label": "Flash Erase",

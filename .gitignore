@@ -52,7 +52,8 @@ Mkfile.old
 dkms.conf
 
 # Remove output folder
-build/
+build/*
+!build/outuput.txt
 
 # vscode folder
 .vscode/
